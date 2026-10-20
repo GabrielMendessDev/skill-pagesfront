@@ -17,6 +17,21 @@ A skill fica em [`skills/criar-paginas-front/`](skills/criar-paginas-front/) —
 instruções que a IA segue estão no
 [SKILL.md](skills/criar-paginas-front/SKILL.md).
 
+## Duas formas de usar
+
+- **Por link (mais simples):** envie o prompt com o link da `SKILL.md` (veja
+  [Como chamar a skill](#como-chamar-a-skill)). A IA abre o arquivo e segue as
+  instruções — não precisa instalar nada.
+- **Instalada no projeto (opcional):** para o Claude Code reconhecer a skill
+  automaticamente, coloque-a em `.claude/skills/` do projeto onde vai gerar as
+  páginas:
+
+  ```bash
+  git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
+  mkdir -p SEU-PROJETO/.claude/skills
+  cp -r skill-pagesfront/skills/criar-paginas-front SEU-PROJETO/.claude/skills/
+  ```
+
 ---
 
 ## Antes de rodar: prepare o repositório
@@ -49,16 +64,42 @@ lista o que falta. Deixe pronto:
 
 ---
 
-## Como rodar
+## Como chamar a skill
 
-1. Abra o projeto no Claude Code (a skill fica em
-   `skills/criar-paginas-front/`).
-2. Peça algo como:
-   > "Criar as páginas de front do produto novo.
-   > design .com: <link> · design dtc-b: <link> · favicon: <link> ·
-   > paleta: <link ou hex>"
-3. A skill checa os pré-requisitos e, se tudo estiver certo, executa o fluxo
-   abaixo. Se faltar algo, ela avisa o que falta.
+1. Deixe as **páginas de referência** (mesmo nicho) no repositório — veja a
+   seção acima.
+2. Abra o projeto no Claude Code e envie o **prompt abaixo**, preenchendo os
+   links. A skill checa os pré-requisitos e, se estiver tudo certo, executa o
+   fluxo; se faltar algo, ela avisa o que falta.
+
+### Prompt para copiar
+
+```text
+Siga a skill https://github.com/GabrielMendessDev/skill-pagesfront/blob/main/skills/criar-paginas-front/SKILL.md
+para gerar todas as páginas de front do produto novo.
+
+design .com:  <link figma>
+design dtc-b: <link figma>
+favicon:      <link figma>
+paleta:       <link figma>   (ou colar os hex aqui)
+```
+
+### Exemplo preenchido
+
+```text
+Siga a skill https://github.com/GabrielMendessDev/skill-pagesfront/blob/main/skills/criar-paginas-front/SKILL.md
+para gerar todas as páginas de front do produto novo.
+
+design .com:  https://www.figma.com/design/ABC123/com?node-id=1-2
+design dtc-b: https://www.figma.com/design/ABC123/dtcb?node-id=3-4
+favicon:      https://www.figma.com/design/ABC123/assets?node-id=5-6
+paleta:       #B80012, #586571, #0E0D11, #FFFFFF
+```
+
+> O link aponta para a `SKILL.md` — a IA abre esse arquivo e segue as instruções.
+> A paleta pode vir por link do Figma **ou** como hex (como no exemplo). As
+> páginas `thank`, `vsl`, `bonus` e os rodapés precisam já estar no repositório
+> (de um produto do mesmo nicho) para serem adaptadas.
 
 ---
 
