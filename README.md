@@ -5,6 +5,8 @@ produto novo a partir de designs do **Figma** + páginas de referência de um
 produto do **mesmo nicho**.
 
 - **Gera do Figma (fiéis ao design):** `.com` (o `index.html` da raiz) e `dtc-b`.
+  A `dtc-b` pode, opcionalmente, partir de uma **dtc-b de um produto do mesmo
+  nicho** como base pronta e ser ajustada até ficar igual ao design do Figma.
 - **Adapta da referência (cor, copy, mockup, nome, links):** `thank`, `vsl`,
   `bonus` e os rodapés (`contact`, `terms`, `privacy`, `reference`, `shipping`,
   `refund`, `disclaimer`).
@@ -44,7 +46,10 @@ lista o que falta. Deixe pronto:
    - em pastas próprias: `thank/`, `vsl/`, `bonus/` (cada uma com seu
      `index.html` + `assets/`);
    - na raiz, os 7 rodapés: `contact.html`, `terms.html`, `privacy.html`,
-     `reference.html`, `shipping.html`, `refund.html`, `disclaimer.html`.
+     `reference.html`, `shipping.html`, `refund.html`, `disclaimer.html`;
+   - *(opcional)* `dtc-b/` de um produto do mesmo nicho, se você quiser que a
+     `dtc-b` seja montada em cima de uma base pronta e ajustada ao Figma (ver
+     "O que a skill faz").
 2. **Os links do Figma** (a paleta pode vir por escrito):
 
    ```
@@ -106,7 +111,12 @@ paleta:       #B80012, #586571, #0E0D11, #FFFFFF
 ## O que a skill faz (fluxo)
 
 1. **`dtc-b` do Figma** — feita primeiro, porque a **seção de kits** dela é
-   reaproveitada na `.com`.
+   reaproveitada na `.com`. Dois modos:
+   - **Só Figma:** a IA constrói do zero, fiel ao design.
+   - **dtc-b de referência + Figma:** se houver uma `dtc-b/` de um produto do
+     mesmo nicho, a IA usa essa página como **base pronta** (estrutura, seções,
+     saves/kits, scripts) e **ajusta tudo para ficar igual ao design do Figma**
+     do produto atual — mais assertividade no resultado.
 2. **`.com` do Figma** (`index.html` da raiz) — hero, mockups e imagens baixados
    do Figma; seção de kits vinda da `dtc-b`; depoimentos com **Swiper**.
 3. **Adapta `thank`, `vsl`, `bonus`** — aplica paleta, nome, mockups e copy do
@@ -144,7 +154,7 @@ Tailwind inline, `script.js`, `assets/images/`, `assets/ebooks/` etc.) — a ski
 ├─ index.html           ← .com (Figma)
 ├─ contact.html ... disclaimer.html   ← 7 rodapés (adaptados)
 ├─ assets/{img, css/style.scss, js/main.js}
-├─ dtc-b/   ← Figma
+├─ dtc-b/   ← Figma (opc.: base de dtc-b do mesmo nicho, ajustada ao Figma)
 ├─ thank/   ← adaptada
 ├─ vsl/     ← adaptada
 └─ bonus/   ← adaptada

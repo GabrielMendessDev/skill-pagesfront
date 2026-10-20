@@ -2,15 +2,18 @@
 name: criar-paginas-front
 description: >-
   Gera o conjunto completo de páginas de front de um produto novo: constrói a
-  .com (index.html da raiz) e a dtc-b a partir de design(s) do Figma, e ADAPTA, a
-  partir de páginas de um produto do MESMO NICHO, as páginas thank, vsl, bonus e
-  as de rodapé na raiz (contact, terms, privacy, reference, shipping, refund,
-  disclaimer). Use sempre que o usuário pedir para "criar as páginas de um
-  produto novo", "montar a .com/dtc-b a partir de um Figma", "fazer as páginas de
-  front/landing", "adaptar thank/rodapés para um produto", ou citar o fluxo de
-  criação de páginas (kits, Cartpanda, hero, favicon, paleta de cores, mesmo
-  nicho). O nome do produto, o hero, os mockups, o favicon e a paleta são
-  extraídos de links do Figma (a paleta também pode ser enviada por escrito);
+  .com (index.html da raiz) a partir do design do Figma, monta a dtc-b a partir
+  do Figma (opcionalmente usando uma dtc-b de um produto do MESMO NICHO como base
+  pronta para ganhar assertividade), e ADAPTA, a partir de páginas de um produto
+  do MESMO NICHO, as páginas thank, vsl, bonus e as de rodapé na raiz (contact,
+  terms, privacy, reference, shipping, refund, disclaimer). Use sempre que o
+  usuário pedir para "criar as páginas de um produto novo", "montar a .com/dtc-b a
+  partir de um Figma", "fazer as páginas de front/landing", "adaptar a dtc-b com o
+  Figma", "usar a dtc-b de outro produto + Figma", "adaptar thank/rodapés para um
+  produto", ou citar o fluxo de criação de páginas (kits, Cartpanda, hero,
+  favicon, paleta de cores, mesmo nicho). O nome do produto, o hero, os mockups, o
+  favicon e a paleta são extraídos de links do Figma (a paleta também pode ser
+  enviada por escrito);
   toda imagem é otimizada e nenhuma pode passar de 1MB. Antes de começar, checa
   os pré-requisitos (páginas de referência + links do Figma da .com, da dtc-b, do
   favicon e da paleta) e só prossegue se tudo estiver presente. Segue o padrão de
@@ -22,9 +25,11 @@ description: >-
 # Criar Páginas de Front
 
 Automatiza a criação das páginas de front de um produto novo. A `.com` e a
-`dtc-b` são construídas a partir de design(s) do **Figma**; as demais páginas são
-**adaptadas** de páginas de um produto do **mesmo nicho** (cores, mockups, copy,
-nome do produto e links), preservando a estrutura delas.
+`dtc-b` são construídas a partir de design(s) do **Figma**; a `dtc-b` pode, além
+do Figma, usar uma **dtc-b de um produto do mesmo nicho** como base pronta (ver
+3.1). As demais páginas são **adaptadas** de páginas de um produto do **mesmo
+nicho** (cores, mockups, copy, nome do produto e links), preservando a estrutura
+delas.
 
 Páginas cobertas: **com** (Figma) · **dtc-b** (Figma) · **thank** (adaptar) ·
 **vsl** (adaptar) · **bonus** (adaptar) · **rodapés** (adaptar: contact, terms,
@@ -44,18 +49,32 @@ design .com:  [link figma]
 design dtc-b: [link figma]
 favicon:      [link figma]
 paleta:       [link figma]  — ou a paleta por escrito (hex)
+
+dtc-b de referência (OPCIONAL): pasta dtc-b/ de um produto do mesmo nicho,
+usada como base pronta junto com o design dtc-b do Figma (ver 3.1).
 ```
 
 De cada design (`.com` e `dtc-b`) saem também o **nome do produto, o hero, os
 mockups e as imagens** — não precisam ser enviados à parte.
 
+A **dtc-b aceita dois modos** de construção (detalhes em 3.1):
+- **Só Figma:** o usuário manda apenas o design dtc-b do Figma e a IA constrói do
+  zero, fiel ao design.
+- **Referência + Figma:** o usuário também disponibiliza a `dtc-b/` de um produto
+  do mesmo nicho. A IA usa essa dtc-b como **base pronta** (estrutura, seções,
+  saves/kits, scripts) e **ajusta tudo para ficar igual ao design do Figma** do
+  produto atual — isso aumenta a assertividade do resultado.
+
 ### 1.2 Checagem no repositório
 Verifique, a partir da raiz do repositório, que existem as **páginas de
 referência de um produto do MESMO NICHO** (só as que serão **adaptadas**
-precisam; `.com` e `dtc-b` vêm do Figma):
+precisam; a `.com` vem sempre do Figma):
 - Em pastas próprias, cada uma com seu `index.html` + `assets/` (a estrutura
   interna pode variar por produto — ex.: `img/` ou `images/`, `js/main.js` ou
   `script.js`, `ebooks/`): `thank/` · `vsl/` · `bonus/`.
+- **`dtc-b/` (OPCIONAL):** se o usuário optou pelo modo **Referência + Figma**,
+  deve existir uma `dtc-b/` de um produto do mesmo nicho para servir de base. Se
+  não existir, siga no modo **Só Figma** (construir do zero pelo design).
 - **Na raiz** (arquivos soltos, sem pasta de tipo): os rodapés
   `contact.html` · `terms.html` · `privacy.html` · `reference.html` ·
   `shipping.html` · `refund.html` · `disclaimer.html`.
@@ -117,23 +136,47 @@ não pode faltar nas páginas do Figma:
 Produza nesta ordem (há dependência entre as etapas).
 
 Fontes de cada página:
-- **Do Figma** (reproduzir fielmente): `dtc-b` e `.com`.
+- **Do Figma** (reproduzir fielmente): `.com` e `dtc-b` (esta podendo partir de
+  uma dtc-b de referência — ver 3.1).
 - **Adaptadas** da referência de outro produto do mesmo nicho (paleta, mockups,
   copy, nome, links): `thank`, `vsl`, `bonus` e os **rodapés**.
 
-### 3.1 Construir a `dtc-b` a partir do Figma
+### 3.1 Construir a `dtc-b` (Figma, com ou sem dtc-b de referência)
 A `dtc-b` vem do Figma e serve de referência estrutural para a `.com`
-(principalmente a **seção de kits**), por isso é feita primeiro.
+(principalmente a **seção de kits**), por isso é feita primeiro. O **design do
+Figma é sempre a fonte de verdade**: o resultado final tem de ficar **igual ao
+design**. Há dois modos de chegar lá:
 
+**Comum aos dois modos:**
 1. **Carregue a skill `figma-design-to-code` ANTES** de chamar
    `get_design_context` (pré-requisito obrigatório do MCP do Figma). Extraia
    `fileKey` e `nodeId` do link/frame da `dtc-b`.
-2. Trate o retorno do Figma como **referência** a reproduzir fielmente com o
-   padrão de código do time (HTML limpo + SCSS em árvore), não como código final
-   a colar.
-3. Baixe os assets do Figma (`download_assets`) e otimize.
-4. Gere em `dtc-b/index.html` + `dtc-b/assets/{img,css,js}` (`style.scss`,
-   `main.js`). Depoimentos com **Swiper**; responsivo (breakpoint `900px`).
+2. Trate o retorno do Figma como **referência visual** a reproduzir fielmente com
+   o padrão de código do time (HTML limpo + SCSS em árvore), não como código
+   final a colar.
+
+**Modo A — Só Figma (sem dtc-b de referência).** Construa a página do zero:
+3a. Baixe os assets do Figma (`download_assets`) e otimize.
+4a. Gere em `dtc-b/index.html` + `dtc-b/assets/{img,css,js}` (`style.scss`,
+    `main.js`). Depoimentos com **Swiper**; responsivo (breakpoint `900px`).
+
+**Modo B — dtc-b de referência + Figma (quando existe `dtc-b/` do mesmo nicho).**
+Use a dtc-b de referência como **base pronta** e ajuste-a até ficar **igual ao
+design do Figma** do produto atual:
+3b. Parta da `dtc-b/` de referência: ela já traz a **estrutura, as seções, os
+    saves/kits e os scripts** prontos do nicho — aproveite esse esqueleto em vez
+    de começar do zero.
+4b. **Ajuste tudo ao design do Figma:** layout, ordem/quantidade de seções,
+    paleta, tipografia, copy, nome do produto, mockups e a seção de kits/saves.
+    Onde o design do Figma divergir da referência, **o Figma manda** — adicione,
+    remova ou reordene o que for preciso. Baixe do Figma (`download_assets`) os
+    assets que a referência não tiver e otimize.
+5b. **Limpe os resíduos do produto de referência** (imagens órfãs, scripts de
+    plataforma/tracking, nomes/cores antigos) — mesma regra de limpeza de 3.3.
+    Preserve a estrutura de `dtc-b/assets/{img,css,js}` do padrão do time;
+    depoimentos com **Swiper**; responsivo (breakpoint `900px`).
+
+Em qualquer modo, a `dtc-b` final deve ficar **100% fiel ao design do Figma**.
 
 ### 3.2 Construir a `.com` (`index.html` da raiz) a partir do Figma
 1. Mesmo procedimento do passo 3.1 (skill `figma-design-to-code` antes de
@@ -199,10 +242,12 @@ que estão em subpastas (`dtc-b/`, `thank/`, `vsl/`, `bonus/`).
 
 ## 4. Checklist final (antes de entregar)
 
-- [ ] Pré-requisitos checados; referências (thank, vsl, bonus, rodapés) eram do
-      mesmo nicho; links do Figma (.com, dtc-b, favicon) e a paleta (link ou
-      escrita) presentes.
-- [ ] `dtc-b/index.html` fiel ao Figma.
+- [ ] Pré-requisitos checados; referências (thank, vsl, bonus, rodapés e, se
+      modo B, a dtc-b) eram do mesmo nicho; links do Figma (.com, dtc-b, favicon)
+      e a paleta (link ou escrita) presentes.
+- [ ] `dtc-b/index.html` **100% fiel ao design do Figma** (modo A: construída do
+      zero; modo B: base da dtc-b de referência ajustada ao Figma e sem sobras do
+      produto antigo).
 - [ ] `index.html` (`.com`) fiel ao Figma; hero, mockups e nome do design, paleta
       do link/texto; kits vindos da `dtc-b`.
 - [ ] Todas as imagens otimizadas; **nenhuma imagem passa de 1MB**.

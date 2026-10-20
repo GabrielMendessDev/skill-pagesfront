@@ -21,9 +21,9 @@ ficam **na raiz** (sem pasta de tipo). `dtc-b`, `thank`, `vsl` e `bonus` ficam e
 │  └─ js/
 │     └─ main.js
 │
-├─ dtc-b/                  ← GERADA do Figma — padrão mayor-code-style
-│  ├─ index.html
-│  └─ assets/{img/, css/style.scss, js/main.js}
+├─ dtc-b/                  ← do Figma (padrão mayor-code-style). Modo A: do zero.
+│  ├─ index.html              Modo B: base de uma dtc-b do mesmo nicho AJUSTADA
+│  └─ assets/{img/, css/style.scss, js/main.js}   até ficar igual ao Figma.
 │
 ├─ vsl/                    ← de outro produto → ADAPTAR
 │  ├─ index.html
@@ -70,7 +70,7 @@ ficam **na raiz** (sem pasta de tipo). `dtc-b`, `thank`, `vsl` e `bonus` ficam e
 | Página       | Local                 | Origem                      | Estrutura                         |
 |--------------|-----------------------|-----------------------------|-----------------------------------|
 | `.com`       | `index.html` (raiz)   | **Figma** (reproduzir fiel) | mayor-code-style (`assets/{img,css,js}`) |
-| `dtc-b`      | `dtc-b/index.html`    | **Figma** (reproduzir fiel) | mayor-code-style                  |
+| `dtc-b`      | `dtc-b/index.html`    | **Figma** (fiel). Opcional: dtc-b do mesmo nicho como base, ajustada ao Figma | mayor-code-style |
 | `vsl`        | `vsl/index.html`      | Referência → **adaptar**    | preservar a da referência         |
 | `thank`      | `thank/index.html`    | Referência → **adaptar**    | preservar a da referência         |
 | `bonus`      | `bonus/index.html`    | Referência → **adaptar**    | preservar a da referência         |
