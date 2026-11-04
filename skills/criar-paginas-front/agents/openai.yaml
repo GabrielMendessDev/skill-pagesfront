@@ -1,0 +1,12 @@
+interface:
+  display_name: "Criar Páginas de Front"
+  short_description: "Cria .com e dtc-b do Figma e adapta thank, vsl, bonus e rodapés no padrão do time"
+  default_prompt: "Use $criar-paginas-front para gerar as páginas de front do produto novo. design .com: <link figma> | design dtc-b: <link figma> | favicon: <link figma> | paleta: <link figma ou hex>"
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "figma"
+      description: "MCP oficial do Figma (lê os designs da .com, da dtc-b, do favicon e da paleta)"
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"

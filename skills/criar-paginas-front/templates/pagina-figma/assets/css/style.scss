@@ -1,0 +1,223 @@
+// 1. FONTES — @font-face só se a fonte NÃO vier do Google Fonts (link no <head>)
+
+// 2. VARIÁVEIS — paleta do produto (mesmos hex do .pagesfront/produto.json)
+$text: #4b4b4b;
+$darck: #0d2538;
+$darck-2: #d95f1c;
+$primary: #f07b2c;
+$light: #fff;
+$light-2: #fff5f0;
+
+// 3. MIXINS
+@mixin font2() {
+  font-family: "Inter", sans-serif;
+}
+
+// 4. RESET / BASE
+* {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  box-sizing: border-box;
+  text-decoration: none;
+  color: $text;
+  font-family: "Inter", sans-serif;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+// 5. COMPONENTES / UTILITÁRIOS GLOBAIS
+.container {
+  width: 90%;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (max-width: 900px) {
+    max-width: 680px;
+  }
+}
+
+.pd {
+  padding: 80px 0;
+
+  @media (max-width: 900px) {
+    padding: 56px 0;
+  }
+}
+
+.center {
+  text-align: center;
+}
+
+.title {
+  font-size: 40px;
+  line-height: 1.2;
+  color: $darck;
+
+  @media (max-width: 900px) {
+    font-size: 28px;
+  }
+}
+
+.sub {
+  font-size: 18px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 18px 40px;
+  border-radius: 8px;
+  background: $primary;
+  color: $light;
+  font-weight: 700;
+}
+
+// 6. SEÇÕES — mesma ordem do HTML
+header {
+  padding: 16px 0;
+}
+
+.hero {
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 40px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+}
+
+.testimonials {
+  background: $light-2;
+
+  .header {
+    margin-bottom: 40px;
+  }
+
+  .card {
+    background: $light;
+    border-radius: 16px;
+    overflow: hidden;
+
+    .body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+    }
+  }
+
+  .swiper-pagination {
+    position: static;
+    margin-top: 24px;
+  }
+}
+
+.area-kits {
+  ul {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .kit-option {
+    a {
+      display: flex;
+      flex-direction: column;
+      border: 2px solid $light-2;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 12px;
+      background: $darck;
+      color: $light;
+      font-weight: 700;
+    }
+  }
+
+  .best-option {
+    a {
+      border-color: $primary;
+    }
+
+    .header {
+      background: $primary;
+    }
+  }
+}
+
+.faq {
+  .accordion {
+    max-width: 800px;
+    margin: 40px auto 0;
+    text-align: left;
+  }
+
+  .item {
+    border-bottom: 1px solid $light-2;
+
+    .header {
+      padding: 20px 0;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .body {
+      display: none;
+      padding-bottom: 20px;
+    }
+
+    &.active {
+      .body {
+        display: block;
+      }
+    }
+  }
+}
+
+footer {
+  padding: 40px 0;
+  background: $darck;
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  a,
+  p {
+    color: $light;
+    font-size: 14px;
+    text-align: center;
+  }
+}
+
+// 7. REGRAS GLOBAIS RARAS
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

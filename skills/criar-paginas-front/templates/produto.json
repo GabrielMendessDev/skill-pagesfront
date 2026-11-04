@@ -1,0 +1,35 @@
+{
+  "produto": "Nome do Produto Novo",
+  "produto_antigo": ["Nome da Marca da Referência"],
+  "nicho": "",
+  "idioma": "en",
+  "modo_dtcb": "A",
+  "figma": {
+    "com": "",
+    "dtcb": "",
+    "favicon": "",
+    "paleta": ""
+  },
+  "paleta": {
+    "primaria": "#000000",
+    "secundaria": "#000000",
+    "texto": "#000000",
+    "escuro": "#000000",
+    "claro": "#ffffff"
+  },
+  "paleta_antiga": [],
+  "fontes": [],
+  "kits": [
+    { "nome": "", "quantidade": "", "preco": "", "selo": "", "checkout": "PENDENTE" }
+  ],
+  "links": {
+    "checkout": {},
+    "upsell": {},
+    "vsl_video": "PENDENTE",
+    "suporte_email": "",
+    "outros": []
+  },
+  "bonus": [],
+  "scripts_permitidos": [],
+  "pendencias": []
+}

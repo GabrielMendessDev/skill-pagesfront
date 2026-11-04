@@ -1,0 +1,8 @@
+{
+  "name": "pagesfront",
+  "description": "Cria as páginas de front de um produto novo (.com e dtc-b do Figma; thank, vsl, bonus e rodapés adaptados) no padrão de código do time, com validador, prints para comparar com o Figma e otimizador de imagens.",
+  "author": {
+    "name": "Gabriel Mendes"
+  },
+  "repository": "https://github.com/GabrielMendessDev/skill-pagesfront"
+}

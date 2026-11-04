@@ -1,269 +1,209 @@
 ---
 name: criar-paginas-front
 description: >-
-  Gera o conjunto completo de páginas de front de um produto novo: constrói a
-  .com (index.html da raiz) a partir do design do Figma, monta a dtc-b a partir
-  do Figma (opcionalmente usando uma dtc-b de um produto do MESMO NICHO como base
-  pronta para ganhar assertividade), e ADAPTA, a partir de páginas de um produto
-  do MESMO NICHO, as páginas thank, vsl, bonus e as de rodapé na raiz (contact,
-  terms, privacy, reference, shipping, refund, disclaimer). Use sempre que o
-  usuário pedir para "criar as páginas de um produto novo", "montar a .com/dtc-b a
-  partir de um Figma", "fazer as páginas de front/landing", "adaptar a dtc-b com o
-  Figma", "usar a dtc-b de outro produto + Figma", "adaptar thank/rodapés para um
-  produto", ou citar o fluxo de criação de páginas (kits, Cartpanda, hero,
-  favicon, paleta de cores, mesmo nicho). O nome do produto, o hero, os mockups, o
-  favicon e a paleta são extraídos de links do Figma (a paleta também pode ser
-  enviada por escrito);
-  toda imagem é otimizada e nenhuma pode passar de 1MB. Antes de começar, checa
-  os pré-requisitos (páginas de referência + links do Figma da .com, da dtc-b, do
-  favicon e da paleta) e só prossegue se tudo estiver presente. Segue o padrão de
-  código
-  mayor-code-style (HTML limpo, SCSS em árvore, responsivo, Swiper nos
-  depoimentos).
+  Cria as páginas de front de um produto novo já no padrão de código do time
+  (mayor-code-style embutido nesta skill): .com e dtc-b fiéis ao Figma, e thank,
+  vsl, bonus e rodapés Cartpanda (contact, terms, privacy, reference, shipping,
+  refund, disclaimer) adaptados de um produto do mesmo nicho. Traz validador
+  automático, prints por seção para comparar com o Figma e otimizador de imagens
+  (nenhuma acima de 1MB). Use quando pedirem para criar ou montar as páginas de
+  um produto novo, montar a .com ou a dtc-b a partir do Figma, adaptar
+  thank/vsl/bonus/rodapés para um produto, ou citarem kits, Cartpanda, hero,
+  favicon, paleta ou "mesmo nicho".
 ---
 
 # Criar Páginas de Front
 
-Automatiza a criação das páginas de front de um produto novo. A `.com` e a
-`dtc-b` são construídas a partir de design(s) do **Figma**; a `dtc-b` pode, além
-do Figma, usar uma **dtc-b de um produto do mesmo nicho** como base pronta (ver
-3.1). As demais páginas são **adaptadas** de páginas de um produto do **mesmo
-nicho** (cores, mockups, copy, nome do produto e links), preservando a estrutura
-delas.
+Gera o conjunto de páginas de front de um produto novo:
 
-Páginas cobertas: **com** (Figma) · **dtc-b** (Figma) · **thank** (adaptar) ·
-**vsl** (adaptar) · **bonus** (adaptar) · **rodapés** (adaptar: contact, terms,
-privacy, reference, shipping, refund, disclaimer).
+| Página | Origem | Estrutura |
+|---|---|---|
+| `.com` (`index.html` da raiz) | **Figma** (fiel ao design) | padrão de código do time |
+| `dtc-b/` | **Figma** (opcional: dtc-b do mesmo nicho como base) | padrão de código do time |
+| `thank/` `vsl/` `bonus/` | **adaptar** da referência do mesmo nicho | preserva a da referência |
+| 7 rodapés na raiz | **adaptar** (padrão Cartpanda) | preserva a da referência |
 
-## 1. Checagem de pré-requisitos (BLOQUEANTE — faça primeiro)
+**Pasta desta skill (`$SKILL` nos comandos abaixo):** `${CLAUDE_SKILL_DIR}`
 
-Antes de gerar ou adaptar qualquer coisa, verifique o que existe no repositório
-e o que foi fornecido. **Não comece a produzir até tudo estar presente.** Se
-algo faltar, pare e liste exatamente o que falta, em uma mensagem só.
+- No **Claude Code** o caminho acima já vem preenchido.
+- No **Codex** (ou se o texto `${CLAUDE_SKILL_DIR}` aparecer literal), `$SKILL` é a pasta onde está
+  este SKILL.md (ex.: `~/.agents/skills/criar-paginas-front`). Descubra o caminho absoluto e use-o em
+  todos os comandos.
 
-### 1.1 Entradas que o usuário envia
-O usuário fornece um conjunto de links do Figma (a paleta pode vir por escrito):
+Tudo de que a skill precisa está nessa pasta (padrão de código, templates, scripts): **não busque nada
+em links externos.** Os scripts são Node puro e funcionam igual no Claude Code e no Codex, em Windows,
+macOS e Linux.
+
+## Regras de ouro
+
+1. **O validador decide quando acabou.** Nenhuma fase termina sem
+   `node $SKILL/scripts/validar.mjs` com **0 erros** no escopo dela. "Acho que está certo" não conta.
+2. **O Figma é a verdade** da `.com` e da `dtc-b`. Cada seção é comparada print × Figma antes de seguir.
+3. **O padrão de código é obrigatório** nas páginas do Figma (resumo no fim deste arquivo, detalhes em
+   [references/padrao-codigo.md](references/padrao-codigo.md)). O código que o Figma devolve
+   (React/Tailwind) é só referência visual.
+4. **Nunca invente** preço, link de checkout, ID de pixel ou vídeo, e-mail, ingrediente, claim,
+   depoimento ou bônus. Se não veio nas entradas nem está no Figma, use `PENDENTE-<o-que-falta>`
+   (ex.: `href="#PENDENTE-checkout-kit-2"`) e liste no relatório final.
+5. **Uma página por vez**, na ordem das fases. Atualize `.pagesfront/progresso.md` ao fim de cada fase
+   para poder retomar se o contexto acabar.
+6. **Depois da fase 0, não pare para perguntar**, a não ser que falte uma entrada obrigatória. Em
+   dúvida menor, decida pelo Figma ou pela referência e registre a decisão no relatório.
+
+## Fase 0: Pré-checagem (BLOQUEANTE)
+
+Entradas **obrigatórias** na mensagem do usuário:
 
 ```
-design .com:  [link figma]
-design dtc-b: [link figma]
-favicon:      [link figma]
-paleta:       [link figma]  — ou a paleta por escrito (hex)
-
-dtc-b de referência (OPCIONAL): pasta dtc-b/ de um produto do mesmo nicho,
-usada como base pronta junto com o design dtc-b do Figma (ver 3.1).
+design .com:  <link figma>
+design dtc-b: <link figma>
+favicon:      <link figma>
+paleta:       <link figma>  ou os hex por escrito
 ```
 
-De cada design (`.com` e `dtc-b`) saem também o **nome do produto, o hero, os
-mockups e as imagens** — não precisam ser enviados à parte.
+Entradas **opcionais** (se faltarem, viram `PENDENTE` e não bloqueiam): link de checkout por kit,
+upsell, vídeo da VSL (embed/ID), itens de bônus, e-mail de suporte, scripts que devem continuar.
 
-A **dtc-b aceita dois modos** de construção (detalhes em 3.1):
-- **Só Figma:** o usuário manda apenas o design dtc-b do Figma e a IA constrói do
-  zero, fiel ao design.
-- **Referência + Figma:** o usuário também disponibiliza a `dtc-b/` de um produto
-  do mesmo nicho. A IA usa essa dtc-b como **base pronta** (estrutura, seções,
-  saves/kits, scripts) e **ajusta tudo para ficar igual ao design do Figma** do
-  produto atual — isso aumenta a assertividade do resultado.
+Checagens:
 
-### 1.2 Checagem no repositório
-Verifique, a partir da raiz do repositório, que existem as **páginas de
-referência de um produto do MESMO NICHO** (só as que serão **adaptadas**
-precisam; a `.com` vem sempre do Figma):
-- Em pastas próprias, cada uma com seu `index.html` + `assets/` (a estrutura
-  interna pode variar por produto — ex.: `img/` ou `images/`, `js/main.js` ou
-  `script.js`, `ebooks/`): `thank/` · `vsl/` · `bonus/`.
-- **`dtc-b/` (OPCIONAL):** se o usuário optou pelo modo **Referência + Figma**,
-  deve existir uma `dtc-b/` de um produto do mesmo nicho para servir de base. Se
-  não existir, siga no modo **Só Figma** (construir do zero pelo design).
-- **Na raiz** (arquivos soltos, sem pasta de tipo): os rodapés
-  `contact.html` · `terms.html` · `privacy.html` · `reference.html` ·
-  `shipping.html` · `refund.html` · `disclaimer.html`.
+1. Ferramentas: `node $SKILL/scripts/preparar.mjs` (confere Node 22+, `sass`/`sharp` em
+   `~/.cache/pagesfront` e Chrome/Edge) e confirme que as ferramentas do **MCP do Figma** estão
+   disponíveis. Se faltar algo, pare e diga o quê e como resolver (o README da skill explica a
+   instalação no Claude Code e no Codex). Se o ambiente bloquear rede ou a abertura do navegador
+   (sandbox do Codex), peça ao usuário para aprovar o comando ou liberar a rede, em vez de pular a
+   etapa.
+2. Na raiz do projeto: `node $SKILL/scripts/validar.mjs --pre`. O comando lista as referências
+   (thank, vsl, bonus, 7 rodapés), diz o **modo da dtc-b** (A: não há `dtc-b/` de referência, B: há) e
+   mostra pistas do **produto antigo** (títulos, rótulo da paleta, cores mais usadas, scripts de
+   rastreio).
+3. Se faltar link obrigatório ou o `--pre` acusar `FALTA`: **pare** e liste tudo o que falta numa
+   mensagem só.
+4. Se as referências parecerem de **outro nicho** (títulos e copy de outro tipo de produto), avise o
+   usuário antes de continuar. Referência do mesmo nicho é o que faz a adaptação sair fiel.
 
-> O `index.html` da raiz (a `.com`) costuma chegar como esqueleto vazio, para
-> ser preenchido do Figma. Veja a árvore completa em
-> [references/estrutura-pastas.md](references/estrutura-pastas.md).
+## Fase 1: Briefing (fonte única de verdade)
 
-### 1.3 Regras obrigatórias das entradas
-- **Favicon:** baixe do link do Figma, **otimize** e aplique em TODAS as páginas.
-- **Paleta:** extraia do link do Figma (ex.: `get_variable_defs`) ou use os hex
-  enviados por escrito. Sem link nem paleta escrita, pare e peça.
-- **Peso das imagens:** **nenhuma imagem do site pode passar de 1MB.** Otimize
-  todo asset baixado do Figma (comprima, redimensione ao tamanho de exibição,
-  prefira `.webp` quando fizer sentido), sem perda grande de qualidade.
-- **O que o Figma NÃO traz** (peça só se necessário): links de checkout/upsell e
-  dados de contato/suporte dos rodapés, quando não der para reaproveitar da
-  referência.
+1. Copie `$SKILL/templates/produto.json` para `.pagesfront/produto.json` e preencha:
+   - `produto`: nome do produto novo (vem do Figma).
+   - `produto_antigo`: nome(s) **completos** da marca da referência (pistas do `--pre`). Só nomes de
+     marca, nunca palavras genéricas do nicho.
+   - `paleta`: hex do produto novo por papel (`primaria`, `secundaria`, `texto`, `escuro`, `claro`), via
+     `get_variable_defs` no link da paleta ou pelos hex enviados.
+   - `paleta_antiga`: cores da marca antiga (pistas do `--pre`), sem branco e preto.
+   - `fontes`; `kits` (nome, quantidade, preço e selo, tirados do Figma da dtc-b); `links` (o que o
+     usuário mandou, o resto `PENDENTE`); `bonus`; `scripts_permitidos` (vazio, salvo pedido do
+     usuário); `pendencias`.
+2. Baixe o **favicon** do Figma para `.pagesfront/favicon.png` (cada fase copia de lá para a pasta de
+   imagens da página).
+3. Crie `.pagesfront/progresso.md` com o checklist das fases 2 a 7.
+4. Acrescente `.pagesfront/` ao `.gitignore` do projeto (crie o arquivo se não existir), para o
+   material de trabalho não subir junto.
 
-⚠️ **Aviso sobre o mesmo nicho:** quem roda esta skill precisa ter colocado como
-referência páginas de um produto do **mesmo nicho** do produto atual. Isso é o
-que torna a adaptação fiel (estrutura de seções, tipo de prova, garantia,
-depoimentos etc. já batem com o nicho). Se as referências forem de outro nicho,
-avise o usuário antes de continuar.
+O validador usa o briefing para caçar resíduos do produto antigo, links não declarados e paleta não
+aplicada. **Todo link externo que ficar nas páginas precisa estar declarado no briefing.**
 
-Só depois de tudo confirmado, siga para a produção.
+## Fase 2: dtc-b (Figma)
 
-## 2. Padrão de código (mayor-code-style)
+Leia antes: [references/padrao-codigo.md](references/padrao-codigo.md) e
+[references/figma-para-codigo.md](references/figma-para-codigo.md).
 
-As páginas **geradas do Figma** (`.com` e `dtc-b`) seguem a skill
-**mayor-code-style**:
-`https://github.com/moisesmengo/mayor-code-style/blob/main/skills/mayor-code-style/SKILL.md`.
-Se ela estiver disponível como skill/arquivo no ambiente, carregue-a. As páginas
-**adaptadas** (`thank`, `vsl`, `bonus`, rodapés) **preservam a estrutura/estilo
-que já têm** (podem usar Tailwind inline, `script.js` etc.) — não as reescreva
-para SCSS; aplique o padrão abaixo ao código novo que você criar. Resumo do que
-não pode faltar nas páginas do Figma:
+1. **Base**
+   - Modo A: copie `$SKILL/templates/pagina-figma/` para `dtc-b/`; troque `{{PRODUTO}}` pelo nome e
+     `{{RAIZ}}` por `../`.
+   - Modo B: parta da `dtc-b/` de referência (estrutura, seções, kits, scripts). Se ela não estiver no
+     padrão de código, refatore para o padrão enquanto ajusta ao Figma.
+2. **Seção por seção** (nunca a página inteira de uma vez): `get_metadata` para listar as seções;
+   depois, para cada uma, `get_screenshot` + `get_design_context`. Escreva HTML e SCSS no padrão e
+   baixe os assets para `dtc-b/assets/img/`. O design manda na ordem e na quantidade de seções:
+   remova do template ou da referência o que o design não tem e acrescente o que falta.
+3. Copie o favicon para `dtc-b/assets/img/favicon.png`.
+4. `node $SKILL/scripts/otimizar-imagens.mjs dtc-b/assets/img --webp`
+5. `node $SKILL/scripts/validar.mjs --so dtc-b --compilar`, até **0 erros**.
+6. **QA visual:** `node $SKILL/scripts/capturar.mjs dtc-b/index.html`. Resolva o que ele acusar (erro
+   de JS, arquivo que não carrega, overflow) e compare cada print com o `get_screenshot` da seção
+   (checklist em figma-para-codigo.md §7). Liste as diferenças, corrija e capture de novo, no máximo
+   3 rodadas por seção.
+7. Atualize o progresso.
 
-- **Stack:** apenas HTML, SCSS e JavaScript. Sem React, Next ou qualquer
-  framework. Sem bundler/partials — um único `style.scss` por página.
-- **Estrutura de arquivos por página:** `index.html` + `assets/` com três pastas:
-  `img/` (imagens), `css/` (`style.scss`) e `js/` (`main.js`).
-- **HTML limpo:** poucas classes, só para identificar seção, componente
-  reutilizável ou item repetido. **Nada de BEM** (`__`, `--`). Nomes simples
-  escopados pelo pai (ex.: `.hero .content`).
-- **SCSS em árvore:** aninhar seguindo a hierarquia do HTML, não nomes longos.
-  Cada media query dentro do bloco que ela modifica (breakpoint principal:
-  `900px`), nunca num bloco gigante no fim.
-- **`<main>` só no hero.** Demais seções direto no `<body>`, antes do `<footer>`.
-- **Ordem do `style.scss`:** `@font-face` → variáveis → mixins → reset/base →
-  componentes/utilitários globais → seções (na ordem do HTML) → regras globais
-  raras (ex.: `prefers-reduced-motion`).
-- **Se mexer em classe do HTML, atualize os seletores do `main.js`.**
-- **Responsivo** e **imagens otimizadas** sem perda grande de qualidade.
-- **Depoimentos:** usar a biblioteca **Swiper** (via CDN).
+## Fase 3: .com (`index.html` da raiz)
 
-## 3. Fluxo de produção
+Mesmo procedimento da fase 2, com o design da `.com`, em `index.html` + `assets/` da raiz (template com
+`{{RAIZ}}` vazio).
 
-Produza nesta ordem (há dependência entre as etapas).
+- **Kits:** reaproveite a seção de kits da dtc-b (mesmos kits e links), ajustando ao visual da `.com`.
+- `otimizar-imagens.mjs assets/img --webp` → `validar.mjs --so index.html --compilar` (0 erros) →
+  `capturar.mjs index.html` + comparação com o Figma.
 
-Fontes de cada página:
-- **Do Figma** (reproduzir fielmente): `.com` e `dtc-b` (esta podendo partir de
-  uma dtc-b de referência — ver 3.1).
-- **Adaptadas** da referência de outro produto do mesmo nicho (paleta, mockups,
-  copy, nome, links): `thank`, `vsl`, `bonus` e os **rodapés**.
+## Fase 4: thank, vsl, bonus (adaptar)
 
-### 3.1 Construir a `dtc-b` (Figma, com ou sem dtc-b de referência)
-A `dtc-b` vem do Figma e serve de referência estrutural para a `.com`
-(principalmente a **seção de kits**), por isso é feita primeiro. O **design do
-Figma é sempre a fonte de verdade**: o resultado final tem de ficar **igual ao
-design**. Há dois modos de chegar lá:
+Leia antes: [references/adaptacao-e-rodapes.md](references/adaptacao-e-rodapes.md).
 
-**Comum aos dois modos:**
-1. **Carregue a skill `figma-design-to-code` ANTES** de chamar
-   `get_design_context` (pré-requisito obrigatório do MCP do Figma). Extraia
-   `fileKey` e `nodeId` do link/frame da `dtc-b`.
-2. Trate o retorno do Figma como **referência visual** a reproduzir fielmente com
-   o padrão de código do time (HTML limpo + SCSS em árvore), não como código
-   final a colar.
+Para cada página: troque a identidade (nome, paleta, mockups, copy, links), limpe o que é do produto
+antigo e **preserve a estrutura e os caminhos** (não reescreva em SCSS, não reorganize pastas). Depois:
 
-**Modo A — Só Figma (sem dtc-b de referência).** Construa a página do zero:
-3a. Baixe os assets do Figma (`download_assets`) e otimize.
-4a. Gere em `dtc-b/index.html` + `dtc-b/assets/{img,css,js}` (`style.scss`,
-    `main.js`). Depoimentos com **Swiper**; responsivo (breakpoint `900px`).
+1. `node $SKILL/scripts/otimizar-imagens.mjs <pasta de imagens da página>` (**sem** `--webp`, para não
+   mudar nomes).
+2. `node $SKILL/scripts/validar.mjs --so <thank|vsl|bonus> --compilar`, até 0 erros.
+3. `node $SKILL/scripts/capturar.mjs <página>/index.html`: sem erro de JS, sem arquivo quebrado, sem
+   overflow. Olhe os prints para conferir se a paleta nova entrou em tudo.
 
-**Modo B — dtc-b de referência + Figma (quando existe `dtc-b/` do mesmo nicho).**
-Use a dtc-b de referência como **base pronta** e ajuste-a até ficar **igual ao
-design do Figma** do produto atual:
-3b. Parta da `dtc-b/` de referência: ela já traz a **estrutura, as seções, os
-    saves/kits e os scripts** prontos do nicho — aproveite esse esqueleto em vez
-    de começar do zero.
-4b. **Ajuste tudo ao design do Figma:** layout, ordem/quantidade de seções,
-    paleta, tipografia, copy, nome do produto, mockups e a seção de kits/saves.
-    Onde o design do Figma divergir da referência, **o Figma manda** — adicione,
-    remova ou reordene o que for preciso. Baixe do Figma (`download_assets`) os
-    assets que a referência não tiver e otimize.
-5b. **Limpe os resíduos do produto de referência** (imagens órfãs, scripts de
-    plataforma/tracking, nomes/cores antigos) — mesma regra de limpeza de 3.3.
-    Preserve a estrutura de `dtc-b/assets/{img,css,js}` do padrão do time;
-    depoimentos com **Swiper**; responsivo (breakpoint `900px`).
+Se o ambiente tiver subagentes, as três páginas podem ser delegadas em paralelo. Passe a cada um o
+caminho da página, do briefing e de `references/adaptacao-e-rodapes.md`. Rode o validador você mesmo
+depois.
 
-Em qualquer modo, a `dtc-b` final deve ficar **100% fiel ao design do Figma**.
+## Fase 5: rodapés (adaptar, padrão Cartpanda)
 
-### 3.2 Construir a `.com` (`index.html` da raiz) a partir do Figma
-1. Mesmo procedimento do passo 3.1 (skill `figma-design-to-code` antes de
-   `get_design_context`), para o frame/link da `.com`.
-2. **Hero e demais imagens:** baixe do Figma (`download_assets`) o background, o
-   pote/mockup e os outros assets; **otimize (nenhuma imagem > 1MB)** e salve em
-   `assets/img/`. O nome vem do design; a paleta, do link/texto informado.
-3. **Seção de kits:** pegue a seção de kits da `dtc-b/` (passo 3.1), ajustando
-   cores, imagens e copys para a `.com`.
-4. **Depoimentos:** monte com **Swiper**.
-5. Gere o `index.html` na raiz com `assets/{img,css,js}` (`style.scss`,
-   `main.js`); responsivo (breakpoint `900px`).
+Para os 7 rodapés da raiz: comente o HTML por blocos, troque a paleta no `:root`, o nome do produto,
+o `<title>` e os dados de contato (detalhes em adaptacao-e-rodapes.md). Mantenha Tailwind e o
+`<style>` inline. Depois: `node $SKILL/scripts/validar.mjs --so rodapes`, até 0 erros.
 
-As páginas de Figma devem ficar **100% fiéis** ao design dentro do padrão de
-código.
+## Fase 6: Validação final
 
-### 3.3 Adaptar as demais páginas de front
-Adapte, a partir das referências, para o produto novo (paleta, mockups, copy,
-nome, links), **preservando a estrutura e os paths** que cada página já usa (não
-reorganize pastas nem reescreva o layout):
-- **thank** — página de obrigado; aplique a paleta e adapte a copy ao produto.
-- **vsl** — página de VSL; adapte copy, cores e mockups.
-- **bonus** — página de bônus; adapte copy, cores e os e-books/itens de bônus.
+1. `node $SKILL/scripts/validar.mjs --compilar` (projeto inteiro, sem `--so`): **0 erros**.
+2. `capturar.mjs` em todas as páginas: nenhum erro de JS, recurso quebrado ou overflow.
+3. Cada **aviso** restante do validador precisa ser resolvido ou explicado no relatório.
 
-**Limpeza obrigatória (vale para 3.3 e 3.4).** As páginas vêm de outro produto e
-carregam lixo que **não pode ir para a entrega**. Em cada página adaptada,
-remova:
-- **Imagens/arquivos órfãos** — qualquer asset em `assets/` que não é mais
-  referenciado no HTML/CSS/JS (mockups, logos, e-books, ícones do produto
-  antigo). Deixe só o que a página usa de fato.
-- **Scripts de plataforma/terceiros do produto anterior** — pixels e tags
-  (Facebook/Meta, TikTok, Google Analytics/GTM), scripts de funil/checkout
-  (Cartpanda e afins), chats, A/B, remarketing e IDs/tokens do produto antigo.
-  Remova o que for do produto/konta anterior; só mantenha (re-apontando para o
-  produto novo) o que for realmente necessário para a página funcionar.
-- **Resíduos de código** — comentários, blocos e `<link>`/`<script>` mortos,
-  arquivos duplicados ou de exemplo.
+## Fase 7: Relatório final ao usuário
 
-Ao terminar, confira que todo `src`/`href` resolve e que não sobrou nada do
-produto/plataforma antigos.
+- Páginas geradas e modo da dtc-b (A ou B).
+- Resultado do validador (erros, avisos e a explicação de cada aviso).
+- Diferenças visuais que sobraram em relação ao Figma (seção e motivo), se houver.
+- **Pendências** (`PENDENTE-*`): o que o usuário precisa mandar e onde entra.
+- O que foi removido do produto antigo (scripts de rastreio, links, arquivos).
+- `.pagesfront/` é material de trabalho (briefing, prints): não suba para a hospedagem.
 
-### 3.4 Adaptar os rodapés (Cartpanda) — regra do fluxo
-As páginas de rodapé estão **na raiz** e são de **outro produto** (padrão
-**Cartpanda**). A IA **deve adaptá-las** para o produto atual — essa é uma regra
-do fluxo. Para cada uma (contact, terms, privacy, reference, shipping, refund,
-disclaimer):
-- **Comente o HTML** explicando os blocos (padrão Cartpanda), para facilitar a
-  manutenção futura.
-- **Adapte** a paleta de cores e o **nome do produto/marca** (e dados de
-  contato/endereço quando existirem na referência). Não deixe sobrar nenhum
-  nome, cor ou dado do produto antigo.
+## Padrão de código: resumo obrigatório
 
-Detalhes e checklist por página: [references/adaptacao-e-rodapes.md](references/adaptacao-e-rodapes.md).
+Vale para a `.com` e a `dtc-b`. Texto completo e exemplos:
+[references/padrao-codigo.md](references/padrao-codigo.md).
 
-### 3.5 Aplicar o favicon em todas as páginas
-Baixe o favicon do link do Figma, **otimize** (bem leve, muito abaixo de 1MB) e
-salve nos assets de cada página. Inclua no `<head>` de **todas** as páginas
-(`.com`, `dtc-b`, `thank`, `vsl`, `bonus` e rodapés) a referência ao favicon.
-Padrão real usado nas páginas:
-`<link rel="shortcut icon" href="assets/img/favicon.png" type="image/png" />`.
-Ajuste o caminho **relativo** para funcionar tanto nas páginas da raiz quanto nas
-que estão em subpastas (`dtc-b/`, `thank/`, `vsl/`, `bonus/`).
+- Só HTML, SCSS e JS puro. Sem React, Next, Tailwind, bundler ou partials. Um `style.scss` por página,
+  compilado para `style.css` (é o `style.css` que o HTML carrega).
+- Arquivos: `index.html` + `assets/img/` + `assets/css/style.scss` + `assets/js/main.js`.
+- HTML mínimo: classe só para seção, componente reutilizável ou item repetido. **Nada de BEM** (`__`,
+  `--`). Nomes simples escopados pelo pai: `.hero .content`, `.faq .item .header`.
+- Seções: `.hero`, `.faixa`, `.sobre`, `.beneficios`, `.ingredientes`, `.testimonials`, `.shipping`,
+  `.area-kits`, `.guarantee`, `.faq`. Nomes locais: `.container`, `.content`, `.media`, `.header`,
+  `.body`, `.footer`, `.card`, `.item`, `.main`, `.price`, `.btn`, `.title`, `.sub`, `.pd`, `.center`.
+- `<main>` envolve **só** o hero. As outras seções ficam direto no `<body>`, antes do `<footer>`.
+- SCSS em árvore seguindo o HTML. Ordem: `@font-face` → variáveis → mixins → reset/base → componentes
+  globais → seções na ordem do HTML → regras globais raras.
+- Media queries **dentro** do bloco que modificam. Breakpoint principal `900px`; `1100px`/`620px` só se
+  precisar.
+- Depoimentos com **Swiper** (CDN). FAQ: alternar `.active` no `.item`.
+- Mudou classe no HTML → atualize o `main.js`.
 
-## 4. Checklist final (antes de entregar)
+## Erros conhecidos (não repita)
 
-- [ ] Pré-requisitos checados; referências (thank, vsl, bonus, rodapés e, se
-      modo B, a dtc-b) eram do mesmo nicho; links do Figma (.com, dtc-b, favicon)
-      e a paleta (link ou escrita) presentes.
-- [ ] `dtc-b/index.html` **100% fiel ao design do Figma** (modo A: construída do
-      zero; modo B: base da dtc-b de referência ajustada ao Figma e sem sobras do
-      produto antigo).
-- [ ] `index.html` (`.com`) fiel ao Figma; hero, mockups e nome do design, paleta
-      do link/texto; kits vindos da `dtc-b`.
-- [ ] Todas as imagens otimizadas; **nenhuma imagem passa de 1MB**.
-- [ ] `thank`, `vsl`, `bonus` adaptadas (paleta, mockups, copy, nome, links) —
-      sem sobras do produto de referência (nome/cores antigos).
-- [ ] Rodapés (na raiz) comentados e adaptados (paleta + nome do produto).
-- [ ] Favicon aplicado no `<head>` de TODAS as páginas (caminho relativo correto
-      na raiz e nas subpastas).
-- [ ] Páginas do Figma (`.com`, `dtc-b`) no padrão mayor-code-style: HTML limpo
-      sem BEM, SCSS em árvore com media queries aninhadas (`900px`), `<main>` só
-      no hero, ordem do `style.scss` correta, seletores do `main.js` batendo com
-      o HTML, `assets/{img,css/style.scss,js/main.js}`, depoimentos com Swiper.
-- [ ] Páginas adaptadas preservaram a estrutura/paths originais (não viraram
-      SCSS nem tiveram pastas reorganizadas); imagens otimizadas.
-- [ ] **Limpeza feita:** removidas imagens/arquivos órfãos e scripts de
-      plataforma/tracking (pixels, GA/GTM, funil/checkout, chats) do produto
-      anterior; nenhum `src`/`href` quebrado.
-- [ ] Nenhuma referência órfã ao produto/marca antigos em texto, alt, title,
-      links ou meta tags.
+| Erro | O que fazer | Validador |
+|---|---|---|
+| Colar o React/Tailwind do `get_design_context` | Reescrever no padrão (HTML limpo + SCSS em árvore) | F9 |
+| Deixar URL `localhost:3845` ou asset do MCP no código | Baixar para `assets/img/` | H4 |
+| Pedir o `get_design_context` da página inteira | Ler seção por seção | — |
+| Editar `style.scss` sem compilar | Rodar o validador com `--compilar` | S1 |
+| Cor antiga escondida em Tailwind config, `bg-[#hex]` ou `style=""` nas adaptadas | Buscar e trocar em todos os lugares | N2 / N3 |
+| Reaproveitar o checkout do produto antigo ou inventar um | `PENDENTE-checkout-<kit>` | T2 |
+| Pixel ou tag do produto antigo esquecido | Remover | T1 |
+| Hero exportado em 2x com 3 a 10MB | `otimizar-imagens.mjs` | I1 |
+| Imagem do produto antigo sobrando na pasta | Apagar | A1 |
+| Dar por pronto sem comparar com o Figma | QA visual por seção | — |

@@ -1,0 +1,12 @@
+{
+  "name": "skill-pagesfront",
+  "owner": { "name": "Gabriel Mendes" },
+  "description": "Skills de criação de páginas de front do time",
+  "plugins": [
+    {
+      "name": "pagesfront",
+      "source": "./",
+      "description": "Cria as páginas de front de um produto novo no padrão do time (Figma + adaptação de referências do mesmo nicho)."
+    }
+  ]
+}

@@ -1,185 +1,393 @@
 # skill-pagesfront
 
-Skill de Claude Code que gera o **conjunto completo de páginas de front** de um
-produto novo a partir de designs do **Figma** + páginas de referência de um
-produto do **mesmo nicho**.
+Skill que gera o **conjunto completo de páginas de front** de um produto novo a partir dos designs do
+**Figma** e de páginas de referência de um produto do **mesmo nicho**, já no **padrão de código do
+time** (mayor-code-style, embutido na skill). Funciona no **Claude Code** e no **Codex (ChatGPT)**: é a
+mesma pasta de skill para os dois.
 
-- **Gera do Figma (fiéis ao design):** `.com` (o `index.html` da raiz) e `dtc-b`.
-  A `dtc-b` pode, opcionalmente, partir de uma **dtc-b de um produto do mesmo
-  nicho** como base pronta e ser ajustada até ficar igual ao design do Figma.
-- **Adapta da referência (cor, copy, mockup, nome, links):** `thank`, `vsl`,
-  `bonus` e os rodapés (`contact`, `terms`, `privacy`, `reference`, `shipping`,
-  `refund`, `disclaimer`).
+| Página | Origem | Estrutura |
+|---|---|---|
+| `.com` (`index.html` da raiz) | Figma, fiel ao design | padrão de código do time |
+| `dtc-b/` | Figma (opcional: dtc-b do mesmo nicho como base) | padrão de código do time |
+| `thank/`, `vsl/`, `bonus/` | adaptadas da referência | mantém a da referência |
+| 7 rodapés (`contact`, `terms`, `privacy`, `reference`, `shipping`, `refund`, `disclaimer`) | adaptados (padrão Cartpanda) | mantém a da referência |
 
-O **nome do produto, o hero e os mockups** são extraídos do próprio Figma. O
-**favicon** e a **paleta** vêm por link do Figma (a paleta também pode ser
-enviada por escrito). Toda imagem é otimizada e **nenhuma pode passar de 1MB**.
+A skill não depende só de a IA "lembrar as regras". Ela traz scripts que **conferem o resultado**, e a
+IA só pode entregar quando eles passam:
 
-A skill fica em [`skills/criar-paginas-front/`](skills/criar-paginas-front/) — as
-instruções que a IA segue estão no
-[SKILL.md](skills/criar-paginas-front/SKILL.md).
+- **`validar.mjs`**: confere padrão de código, links e imagens quebrados, imagens acima de 1MB,
+  arquivos órfãos, pixels e scripts do produto antigo, nome e cores antigos, checkout não declarado e
+  sobras do Figma. Entrega só com **0 erros**.
+- **`capturar.mjs`**: tira prints por seção (1440px e 390px) para comparar com o Figma e acusa erro de
+  JavaScript, arquivo que não carrega e página vazando para o lado no mobile.
+- **`otimizar-imagens.mjs`**: comprime, redimensiona e converte para webp, mantendo os caminhos do
+  código certos. Nenhuma imagem passa de 1MB.
+- **`preparar.mjs`**: deixa a máquina pronta (Node, `sass`, `sharp`, Chrome/Edge).
 
-## Duas formas de usar
-
-- **Por link (mais simples):** envie o prompt com o link da `SKILL.md` (veja
-  [Como chamar a skill](#como-chamar-a-skill)). A IA abre o arquivo e segue as
-  instruções — não precisa instalar nada.
-- **Instalada no projeto (opcional):** para o Claude Code reconhecer a skill
-  automaticamente, coloque-a em `.claude/skills/` do projeto onde vai gerar as
-  páginas:
-
-  ```bash
-  git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
-  mkdir -p SEU-PROJETO/.claude/skills
-  cp -r skill-pagesfront/skills/criar-paginas-front SEU-PROJETO/.claude/skills/
-  ```
-
----
-
-## Antes de rodar: prepare o repositório
-
-A skill só começa depois de checar os pré-requisitos. Se faltar algo, ela para e
-lista o que falta. Deixe pronto:
-
-1. **Páginas de referência de um produto do MESMO NICHO** (é o ponto mais
-   importante — veja o aviso abaixo):
-   - em pastas próprias: `thank/`, `vsl/`, `bonus/` (cada uma com seu
-     `index.html` + `assets/`);
-   - na raiz, os 7 rodapés: `contact.html`, `terms.html`, `privacy.html`,
-     `reference.html`, `shipping.html`, `refund.html`, `disclaimer.html`;
-   - *(opcional)* `dtc-b/` de um produto do mesmo nicho, se você quiser que a
-     `dtc-b` seja montada em cima de uma base pronta e ajustada ao Figma (ver
-     "O que a skill faz").
-2. **Os links do Figma** (a paleta pode vir por escrito):
-
-   ```
-   design .com:  [link figma]
-   design dtc-b: [link figma]
-   favicon:      [link figma]
-   paleta:       [link figma]  — ou a paleta por escrito (hex)
-   ```
-
-3. *(Só se necessário)* links de checkout/upsell e dados de contato dos rodapés
-   que não dê para reaproveitar da referência.
-
-> ⚠️ **Mesmo nicho é obrigatório.** As páginas de referência precisam ser de um
-> produto do mesmo nicho do produto atual. É isso que faz a adaptação sair fiel
-> (estrutura de seções, prova, garantia, depoimentos já batem). Referência de
-> outro nicho = resultado ruim.
+**Sumário:**
+[1. Requisitos](#1-requisitos) ·
+[2. Instalação no Claude Code](#2-instalação-no-claude-code) ·
+[3. Instalação no Codex](#3-instalação-no-codex-chatgpt) ·
+[4. Preparar o projeto](#4-preparar-o-projeto-antes-de-rodar) ·
+[5. Prompt para chamar a skill](#5-prompt-para-chamar-a-skill) ·
+[6. Regras](#6-regras-que-a-skill-segue) ·
+[7. Fases](#7-o-que-a-skill-faz-fases) ·
+[8. Scripts na mão](#8-rodando-os-scripts-na-mão) ·
+[9. Manutenção](#9-mantendo-a-skill) ·
+[10. Arquivos](#10-arquivos)
 
 ---
 
-## Como chamar a skill
+## 1. Requisitos
 
-1. Deixe as **páginas de referência** (mesmo nicho) no repositório — veja a
-   seção acima.
-2. Abra o projeto no Claude Code e envie o **prompt abaixo**, preenchendo os
-   links. A skill checa os pré-requisitos e, se estiver tudo certo, executa o
-   fluxo; se faltar algo, ela avisa o que falta.
+Valem para os dois agentes:
 
-### Prompt para copiar
+- **Node.js 22 ou mais novo**: confira com `node --version`.
+- **Google Chrome ou Microsoft Edge** instalado, para os prints.
+- **MCP oficial do Figma** conectado ao agente (passo a passo abaixo, em cada cenário).
+- **Git**, para clonar o repositório.
+
+---
+
+## 2. Instalação no Claude Code
+
+### 2.1 Instalar a skill
+
+**Opção A: plugin (recomendado para o time).** Dentro do Claude Code:
 
 ```text
-Siga a skill https://github.com/GabrielMendessDev/skill-pagesfront/blob/main/skills/criar-paginas-front/SKILL.md
-para gerar todas as páginas de front do produto novo.
-
-design .com:  <link figma>
-design dtc-b: <link figma>
-favicon:      <link figma>
-paleta:       <link figma>   (ou colar os hex aqui)
+/plugin marketplace add GabrielMendessDev/skill-pagesfront
+/plugin install pagesfront@skill-pagesfront
 ```
 
-### Exemplo preenchido
+Para **atualizar**: `/plugin marketplace update skill-pagesfront` (ou ative o auto-update em
+`/plugin` → Marketplaces). Depois rode `/reload-plugins` ou abra uma sessão nova.
+
+**Opção B: skill pessoal (sem plugin).** No terminal:
+
+```bash
+git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
+cd skill-pagesfront
+node instalar.mjs claude
+```
+
+Isso copia a skill para `~/.claude/skills/criar-paginas-front` e prepara a máquina. Para **atualizar**:
+`git pull` e `node instalar.mjs claude` de novo.
+
+> Use **uma** das opções, não as duas: com as duas, a skill aparece duplicada.
+
+### 2.2 Conectar o Figma no Claude Code
+
+Escolha uma forma:
+
+```bash
+claude plugin install figma@claude-plugins-official
+```
+
+ou
+
+```bash
+claude mcp add --scope user --transport http figma https://mcp.figma.com/mcp
+```
+
+Depois, numa sessão nova: `/mcp` → **figma** → **Authenticate** → **Allow access** no navegador. Rode
+`/mcp` de novo para confirmar que aparece conectado. (Quem usa o conector do Figma pelo claude.ai já tem
+o Figma disponível.)
+
+### 2.3 Preparar a máquina
+
+Na opção B o `instalar.mjs` já faz isso. Na opção A, a skill roda o `preparar.mjs` sozinha na primeira
+vez. Se preferir adiantar, de dentro do repositório clonado:
+
+```bash
+node skills/criar-paginas-front/scripts/preparar.mjs
+```
+
+---
+
+## 3. Instalação no Codex (ChatGPT)
+
+### 3.1 Instalar a skill
+
+```bash
+git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
+cd skill-pagesfront
+node instalar.mjs codex
+```
+
+Isso copia a skill para `~/.agents/skills/criar-paginas-front` (pasta de skills do usuário no Codex) e
+roda o `preparar.mjs`, que instala `sass` e `sharp` em `~/.cache/pagesfront` e confere Node e
+Chrome/Edge. **Reinicie o Codex** depois de instalar e confira se a skill aparece em `/skills`.
+
+- **Só num projeto:** `node instalar.mjs codex --projeto <pasta-do-projeto>` (instala em
+  `<projeto>/.agents/skills/`).
+- **Manual:** copie a pasta `skills/criar-paginas-front` para `~/.agents/skills/` e rode
+  `node ~/.agents/skills/criar-paginas-front/scripts/preparar.mjs`.
+- **Atualizar:** `git pull` e `node instalar.mjs codex` de novo.
+- **Claude e Codex na mesma máquina:** `node instalar.mjs ambos`.
+
+### 3.2 Conectar o Figma no Codex
+
+```bash
+codex mcp add figma --url https://mcp.figma.com/mcp
+```
+
+Faça login no Figma quando ele pedir e permita o acesso. Confira com `codex mcp list` ou `/mcp` dentro
+do Codex. No app do Codex dá também para instalar pelo menu **Plugins → Figma**.
+
+### 3.3 Sandbox do Codex (importante)
+
+O Codex roda os comandos num sandbox que costuma **bloquear a internet**. Por isso:
+
+1. **Rode o `preparar.mjs` antes**, num terminal normal (o `instalar.mjs` já faz isso). Assim o `sass`
+   e o `sharp` já estão instalados e a skill não precisa baixar nada durante a sessão.
+2. Os **prints** (`capturar.mjs`) abrem o Chrome/Edge e carregam fontes e o Swiper da internet. Se o
+   Codex pedir aprovação para esse comando, **aprove**. Se os prints acusarem "recursos que não
+   carregaram" de `fonts.googleapis.com` ou `cdn.jsdelivr.net`, é o sandbox bloqueando a rede: abra a
+   sessão com a rede liberada:
+
+   ```bash
+   codex -c sandbox_workspace_write.network_access=true
+   ```
+
+---
+
+## 4. Preparar o projeto antes de rodar
+
+A skill só começa depois de checar os pré-requisitos. Se faltar algo, ela para e lista o que falta.
+
+Na pasta do projeto do produto novo:
+
+1. **Páginas de referência de um produto do MESMO NICHO:**
+   - em pastas próprias: `thank/`, `vsl/`, `bonus/` (cada uma com `index.html` + `assets/`);
+   - na raiz, os 7 rodapés: `contact.html`, `terms.html`, `privacy.html`, `reference.html`,
+     `shipping.html`, `refund.html`, `disclaimer.html`;
+   - *(opcional)* `dtc-b/` de um produto do mesmo nicho, para a dtc-b partir de uma base pronta
+     (modo B). Sem ela, a dtc-b é montada só do Figma (modo A).
+   - `index.html` na raiz pode vir vazio: ele vira a `.com`.
+2. **Os 4 links obrigatórios:** design da `.com`, design da `dtc-b`, favicon e paleta (link do Figma ou
+   os hex). Use o link do **frame** (com `node-id`), não só o do arquivo.
+3. **Dados opcionais (evitam pendências):** checkout de cada kit, upsell, vídeo da VSL, bônus, e-mail de
+   suporte. **O que não for enviado vira `PENDENTE-...`** no código e aparece no relatório final. A
+   skill não inventa link, preço, claim nem ID.
+
+> ⚠️ **Mesmo nicho é obrigatório.** Referência de outro nicho = resultado ruim.
+
+---
+
+## 5. Prompt para chamar a skill
+
+Abra o agente **na pasta do projeto** e envie o prompt abaixo. Só a primeira linha muda entre os
+agentes:
+
+| Agente | Primeira linha do prompt |
+|---|---|
+| Claude Code, instalado como plugin | `/pagesfront:criar-paginas-front` |
+| Claude Code, skill pessoal | `/criar-paginas-front` |
+| Codex | `$criar-paginas-front` |
+
+### Modelo para copiar
 
 ```text
-Siga a skill https://github.com/GabrielMendessDev/skill-pagesfront/blob/main/skills/criar-paginas-front/SKILL.md
-para gerar todas as páginas de front do produto novo.
+/pagesfront:criar-paginas-front
 
-design .com:  https://www.figma.com/design/ABC123/com?node-id=1-2
-design dtc-b: https://www.figma.com/design/ABC123/dtcb?node-id=3-4
-favicon:      https://www.figma.com/design/ABC123/assets?node-id=5-6
-paleta:       #B80012, #586571, #0E0D11, #FFFFFF
+Gere todas as páginas de front do produto novo.
+
+design .com:  <link figma do frame da .com>
+design dtc-b: <link figma do frame da dtc-b>
+favicon:      <link figma do favicon>
+paleta:       <link figma da paleta>   (ou os hex: #......, #......, #......)
+
+Opcionais (o que não vier vira PENDENTE):
+checkout kit 1: <link>
+checkout kit 2: <link>
+checkout kit 3: <link>
+upsell:         <link>
+vídeo da vsl:   <embed ou ID do player>
+bônus:          <nome e arquivo de cada bônus>
+suporte:        <e-mail>
 ```
 
-> O link aponta para a `SKILL.md` — a IA abre esse arquivo e segue as instruções.
-> A paleta pode vir por link do Figma **ou** como hex (como no exemplo). As
-> páginas `thank`, `vsl`, `bonus` e os rodapés precisam já estar no repositório
-> (de um produto do mesmo nicho) para serem adaptadas.
+### Exemplo preenchido (Codex)
 
----
+```text
+$criar-paginas-front
 
-## O que a skill faz (fluxo)
+Gere todas as páginas de front do produto novo.
 
-1. **`dtc-b` do Figma** — feita primeiro, porque a **seção de kits** dela é
-   reaproveitada na `.com`. Dois modos:
-   - **Só Figma:** a IA constrói do zero, fiel ao design.
-   - **dtc-b de referência + Figma:** se houver uma `dtc-b/` de um produto do
-     mesmo nicho, a IA usa essa página como **base pronta** (estrutura, seções,
-     saves/kits, scripts) e **ajusta tudo para ficar igual ao design do Figma**
-     do produto atual — mais assertividade no resultado.
-2. **`.com` do Figma** (`index.html` da raiz) — hero, mockups e imagens baixados
-   do Figma; seção de kits vinda da `dtc-b`; depoimentos com **Swiper**.
-3. **Adapta `thank`, `vsl`, `bonus`** — aplica paleta, nome, mockups e copy do
-   produto novo, **preservando a estrutura original** de cada página.
-4. **Adapta os rodapés** (padrão **Cartpanda**) — comenta o HTML e troca paleta +
-   nome do produto, sem reescrever o layout.
-   - Ao adaptar (passos 3 e 4), **limpa o lixo do produto anterior**: imagens e
-     arquivos órfãos (não usados) e scripts de plataforma/tracking (pixels,
-     GA/GTM, funil/checkout, chats, IDs antigos).
-5. **Favicon** baixado do Figma, otimizado e aplicado no `<head>` de todas as
-   páginas.
+design .com:  https://www.figma.com/design/ABC123/Produto?node-id=1-2
+design dtc-b: https://www.figma.com/design/ABC123/Produto?node-id=3-4
+favicon:      https://www.figma.com/design/ABC123/Produto?node-id=5-6
+paleta:       #1A7F5A, #F2B705, #3F4A45, #0B3D2E, #FFFFFF
 
-> Todas as imagens são otimizadas ao longo do processo e **nenhuma passa de 1MB**.
-
----
-
-## Padrão de código
-
-As páginas **geradas do Figma** (`.com`, `dtc-b`) seguem a skill
-**[mayor-code-style](https://github.com/moisesmengo/mayor-code-style/blob/main/skills/mayor-code-style/SKILL.md)**:
-HTML limpo (sem BEM), SCSS em árvore com media queries aninhadas (breakpoint
-`900px`), `<main>` só no hero, `assets/{img, css/style.scss, js/main.js}`,
-responsivo e imagens otimizadas.
-
-As páginas **adaptadas** mantêm a estrutura/estilo que já têm (podem usar
-Tailwind inline, `script.js`, `assets/images/`, `assets/ebooks/` etc.) — a skill
-**não** as reescreve para SCSS.
-
----
-
-## Estrutura final esperada
-
-```
-(raiz)/
-├─ index.html           ← .com (Figma)
-├─ contact.html ... disclaimer.html   ← 7 rodapés (adaptados)
-├─ assets/{img, css/style.scss, js/main.js}
-├─ dtc-b/   ← Figma (opc.: base de dtc-b do mesmo nicho, ajustada ao Figma)
-├─ thank/   ← adaptada
-├─ vsl/     ← adaptada
-└─ bonus/   ← adaptada
+checkout kit 1: https://produto.mycartpanda.com/checkout/9001
+checkout kit 3: https://produto.mycartpanda.com/checkout/9003
+suporte:        support@cartpanda.com
 ```
 
+### O que esperar
+
+- Se faltar algo obrigatório, a skill **para na fase 0** e lista tudo o que falta numa mensagem só.
+- Se estiver tudo certo, ela segue **sem fazer perguntas** até o fim, fase por fase.
+- No fim vem um **relatório** com o resultado do validador, as diferenças visuais que sobraram em
+  relação ao Figma, as **pendências** (o que você ainda precisa mandar) e o que foi removido do produto
+  antigo.
+- A pasta `.pagesfront/` (briefing, progresso, prints) é material de trabalho. Ela entra no
+  `.gitignore` e **não deve subir para a hospedagem**.
+
 ---
 
-## Arquivos da skill
+## 6. Regras que a skill segue
+
+Estas regras estão no [SKILL.md](skills/criar-paginas-front/SKILL.md) e nas
+[referências](skills/criar-paginas-front/references/). As marcadas com **[V]** são conferidas
+automaticamente pelo `validar.mjs` ou pelo `capturar.mjs`: a entrega não passa se forem violadas.
+
+### 6.1 Regras de ouro
+
+1. **O validador decide quando acabou.** Nenhuma fase termina sem `validar.mjs` com 0 erros.
+2. **O Figma é a verdade** da `.com` e da `dtc-b`. Cada seção é comparada print × Figma (no máximo 3
+   rodadas de correção por seção; o que sobrar vai para o relatório).
+3. **O padrão de código é obrigatório** nas páginas do Figma. O código que o Figma devolve
+   (React/Tailwind) é só referência visual.
+4. **Nunca inventar** preço, link de checkout, ID de pixel ou vídeo, e-mail, ingrediente, claim,
+   depoimento ou bônus. Faltou → `PENDENTE-<o-que-falta>` + relatório. **[V]** (checkout não declarado)
+5. **Uma página por vez**, na ordem das fases, com o progresso anotado em `.pagesfront/progresso.md`.
+6. **Depois da fase 0, não parar para perguntar**, a não ser que falte uma entrada obrigatória.
+7. **Briefing como fonte única de verdade** (`.pagesfront/produto.json`): nome, paleta, kits, links,
+   nome e cores do produto antigo. **Todo link externo que ficar nas páginas precisa estar nele.** **[V]**
+
+### 6.2 Padrão de código: `.com` e `dtc-b`
+
+Texto completo: [references/padrao-codigo.md](skills/criar-paginas-front/references/padrao-codigo.md).
+
+- **[V]** Só HTML, SCSS e JS puro. Sem React, Next, Tailwind, bundler ou partials.
+- **[V]** Arquivos: `index.html` + `assets/img/` + `assets/css/style.scss` (compilado para `style.css`,
+  que é o que o HTML carrega) + `assets/js/main.js`.
+- **[V]** Nada de BEM: nenhum `__` ou `--` em classe nem em seletor.
+- HTML mínimo: classe só para seção, componente reutilizável ou item repetido. Nomes simples escopados
+  pelo pai (`.hero .content`, `.faq .item .header`).
+- Nomes de seção: `.hero`, `.faixa`, `.sobre`, `.beneficios`, `.ingredientes`, `.testimonials`,
+  `.shipping`, `.area-kits`, `.guarantee`, `.faq`.
+- **[V]** `<main>` envolve **só** o hero. As outras seções ficam direto no `<body>`.
+- **[V]** SCSS em árvore, na ordem: `@font-face` → variáveis → mixins → reset → componentes globais →
+  seções **na mesma ordem do HTML** → regras globais raras.
+- **[V]** Media queries **dentro** do bloco que modificam (breakpoint principal `900px`).
+- **[V]** Depoimentos com **Swiper** (CDN). FAQ alternando `.active` no `.item`.
+- **[V]** Seletores do `main.js` batem com o HTML.
+- **[V]** SCSS compila e o `style.css` está atualizado.
+- **[V]** Nenhuma URL temporária do Figma (`localhost:3845`) e nenhuma classe utilitária de Tailwind.
+- **[V]** Responsivo: nada vaza para o lado em 390px.
+- O Figma é lido **seção por seção** (nunca a página inteira de uma vez), com os textos copiados
+  literalmente.
+- A seção de **kits** da `.com` reaproveita a da `dtc-b` (mesmos kits e links).
+
+### 6.3 Adaptação: thank, vsl, bonus
+
+Texto completo:
+[references/adaptacao-e-rodapes.md](skills/criar-paginas-front/references/adaptacao-e-rodapes.md).
+
+- **Preservar estrutura e caminhos.** Não reescrever em SCSS, não reorganizar pastas.
+- **[V]** Paleta nova aplicada em **todos** os lugares: variáveis, Tailwind config, classes como
+  `bg-[#hex]`, `style=""`, SVGs.
+- **[V]** Nome do produto novo no `<title>`, textos, `alt`, assinaturas e **nomes de arquivo**.
+- Mockups do produto novo (os mesmos baixados do Figma).
+- Copy só com fatos do Figma ou do briefing. Claim específico do produto antigo sem equivalente → sai
+  ou fica genérico.
+- Player da VSL do produto antigo sai. Sem vídeo novo → `PENDENTE-video-vsl`.
+- Bônus: títulos e capas só se vierem nas entradas. Senão → `PENDENTE-bonus-<n>`.
+
+### 6.4 Rodapés (padrão Cartpanda)
+
+- Comentar o HTML por blocos (banner, passos, aviso, suporte).
+- Trocar a paleta no `:root` e o rótulo `/* <Produto> palette */`.
+- Trocar o nome no `<title>` (`"<Produto> — Contact Us"`), textos e assinatura do suporte.
+- Contato do briefing. O que é do provedor (ex.: `support@cartpanda.com`) pode ficar.
+- Manter o Tailwind e o `<style>` inline. Não reescrever em SCSS.
+
+### 6.5 Limpeza do produto antigo
+
+- **[V]** Pixels e tags removidos: Meta, Google Analytics/GTM, TikTok, Pinterest, Kwai, Snapchat,
+  Bing, Taboola/Outbrain, Clarity, Hotjar, Utmify.
+- **[V]** Checkouts, upsells e links da conta antiga removidos ou trocados pelos do briefing.
+- **[V]** Nenhum resíduo do nome antigo (texto, `alt`, meta, comentários, nomes de arquivo).
+- **[V]** Cores antigas trocadas (aviso, para conferir caso a caso).
+- **[V]** Arquivos órfãos e lixo de sistema (`.DS_Store`) apagados.
+- Blocos comentados e scripts mortos removidos.
+
+### 6.6 Imagens e favicon
+
+- **[V]** Nenhuma imagem acima de **1MB**. Imagens do Figma convertidas para webp e limitadas a 1920px.
+- **[V]** Favicon (baixado do Figma, até 64px) no `<head>` de **todas** as páginas, com caminho relativo
+  correto.
+- **[V]** Todo `src`/`href` resolve; nenhuma imagem ou arquivo quebrado.
+- **[V]** Sem erro de JavaScript nas páginas.
+
+---
+
+## 7. O que a skill faz (fases)
+
+0. **Pré-checagem:** links obrigatórios, ferramentas (`preparar.mjs`), referências no projeto
+   (`validar.mjs --pre`), mesmo nicho.
+1. **Briefing:** `.pagesfront/produto.json`, favicon, progresso e `.gitignore`.
+2. **dtc-b** a partir do Figma (modo A: template; modo B: dtc-b de referência), seção por seção →
+   otimiza imagens → valida → prints × Figma.
+3. **.com** a partir do Figma (kits vindos da dtc-b) → otimiza → valida → prints × Figma.
+4. **thank, vsl, bonus** adaptadas → otimiza → valida → prints.
+5. **Rodapés** adaptados e comentados → valida.
+6. **Validação final** do projeto inteiro: 0 erros, prints sem problemas.
+7. **Relatório:** avisos explicados, diferenças visuais restantes, **pendências** e o que foi removido.
+
+---
+
+## 8. Rodando os scripts na mão
+
+Da raiz do projeto (troque `SKILL` pela pasta da skill instalada, ex.:
+`~/.agents/skills/criar-paginas-front` ou `~/.claude/skills/criar-paginas-front`):
+
+```bash
+node SKILL/scripts/preparar.mjs                   # prepara a máquina (uma vez)
+node SKILL/scripts/validar.mjs --pre              # confere as referências antes de começar
+node SKILL/scripts/validar.mjs --compilar         # valida tudo (compila os .scss antes)
+node SKILL/scripts/validar.mjs --so dtc-b         # só uma parte: raiz | dtc-b | thank | vsl | bonus | rodapes
+node SKILL/scripts/validar.mjs --so index.html    # só uma página
+node SKILL/scripts/capturar.mjs dtc-b/index.html  # prints por seção em .pagesfront/capturas/
+node SKILL/scripts/otimizar-imagens.mjs dtc-b/assets/img --webp
+```
+
+Todos aceitam `--help`.
+
+---
+
+## 9. Mantendo a skill
+
+A skill fica numa pasta só (`skills/criar-paginas-front/`). Qualquer mudança vale para o Claude Code
+e para o Codex. Depois de mudar, faça commit e push, e o time atualiza (plugin:
+`/plugin marketplace update skill-pagesfront`; script: `git pull` + `node instalar.mjs ...`).
+
+Cada vez que um teste sair com defeito:
+
+1. **Dá para checar automaticamente?** Acrescente a regra no `validar.mjs` (ou no `capturar.mjs`).
+   Regra no validador é garantida; regra só no texto depende da IA lembrar.
+2. **Não dá?** Acrescente uma linha na tabela **"Erros conhecidos"** no fim do `SKILL.md`.
+3. Se a IA errou o *jeito* de escrever o código, a melhor correção é um **exemplo**: coloque uma
+   página real aprovada (HTML + SCSS + JS) em `templates/` e aponte para ela no `SKILL.md`. A IA copia
+   exemplo muito melhor do que segue regra.
+
+---
+
+## 10. Arquivos
 
 | Arquivo | Para quê |
 |---|---|
-| [`skills/criar-paginas-front/SKILL.md`](skills/criar-paginas-front/SKILL.md) | Instruções que a IA segue (pré-requisitos, fluxo, checklist). |
-| [`skills/criar-paginas-front/references/estrutura-pastas.md`](skills/criar-paginas-front/references/estrutura-pastas.md) | Árvore de pastas e convenções de cada página. |
-| [`skills/criar-paginas-front/references/adaptacao-e-rodapes.md`](skills/criar-paginas-front/references/adaptacao-e-rodapes.md) | Checklist de adaptação, limpeza e padrão Cartpanda dos rodapés. |
-
----
-
-## Observações / pontos de atenção
-
-- **Paleta:** envie o link do Figma da paleta **ou** os hex por escrito. Sem um
-  dos dois, a skill para e pede.
-- **Favicon:** vem por link do Figma; a skill baixa e otimiza.
-- **Imagens:** nenhuma pode passar de **1MB** — a skill comprime/redimensiona.
-- **Rodapés:** são de outro produto e **sempre** devem ser adaptados (nome,
-  cores, dados de contato) — confira se não sobrou nada do produto anterior.
-- **Limpeza:** as páginas adaptadas são higienizadas — some todo asset órfão e
-  todo script de plataforma/tracking do produto anterior.
-- **Hero da `.com`:** vem do Figma; não é preciso deixar imagens de hero na raiz.
+| [`skills/criar-paginas-front/SKILL.md`](skills/criar-paginas-front/SKILL.md) | Instruções que a IA segue (fases, regras, padrão, erros conhecidos). Lido pelo Claude Code e pelo Codex. |
+| [`references/padrao-codigo.md`](skills/criar-paginas-front/references/padrao-codigo.md) | Padrão de código completo, com exemplos (crédito e licença MIT do mayor-code-style original). |
+| [`references/figma-para-codigo.md`](skills/criar-paginas-front/references/figma-para-codigo.md) | Como ler o Figma seção por seção e fazer a QA visual. |
+| [`references/adaptacao-e-rodapes.md`](skills/criar-paginas-front/references/adaptacao-e-rodapes.md) | Adaptação de thank/vsl/bonus, limpeza e padrão Cartpanda dos rodapés. |
+| [`references/estrutura-pastas.md`](skills/criar-paginas-front/references/estrutura-pastas.md) | Árvore de pastas e convenções. |
+| [`templates/pagina-figma/`](skills/criar-paginas-front/templates/pagina-figma/) | Esqueleto de página do Figma já no padrão (HTML, SCSS, JS). |
+| [`templates/produto.json`](skills/criar-paginas-front/templates/produto.json) | Modelo do briefing. |
+| [`scripts/`](skills/criar-paginas-front/scripts/) | `preparar.mjs`, `validar.mjs`, `capturar.mjs`, `otimizar-imagens.mjs`. |
+| [`agents/openai.yaml`](skills/criar-paginas-front/agents/openai.yaml) | Metadados para o Codex (nome de exibição, prompt padrão, dependência do MCP do Figma). |
+| [`instalar.mjs`](instalar.mjs) | Instala/atualiza a skill no Codex (`~/.agents/skills`) e/ou no Claude Code (`~/.claude/skills`). |
+| [`.claude-plugin/`](.claude-plugin/) | Manifestos para instalar no Claude Code como plugin. |
