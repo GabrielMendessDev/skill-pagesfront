@@ -30,11 +30,12 @@ IA só pode entregar quando eles passam:
 [3. Instalação no Codex](#3-instalação-no-codex-chatgpt) ·
 [4. Preparar o projeto](#4-preparar-o-projeto-antes-de-rodar) ·
 [5. Prompt para chamar a skill](#5-prompt-para-chamar-a-skill) ·
-[6. Regras](#6-regras-que-a-skill-segue) ·
-[7. Fases](#7-o-que-a-skill-faz-fases) ·
-[8. Scripts na mão](#8-rodando-os-scripts-na-mão) ·
-[9. Manutenção](#9-mantendo-a-skill) ·
-[10. Arquivos](#10-arquivos)
+[6. Passo a passo do primeiro teste](#6-passo-a-passo-do-primeiro-teste) ·
+[7. Regras](#7-regras-que-a-skill-segue) ·
+[8. Fases](#8-o-que-a-skill-faz-fases) ·
+[9. Scripts na mão](#9-rodando-os-scripts-na-mão) ·
+[10. Manutenção](#10-mantendo-a-skill) ·
+[11. Arquivos](#11-arquivos)
 
 ---
 
@@ -237,13 +238,106 @@ suporte:        support@cartpanda.com
 
 ---
 
-## 6. Regras que a skill segue
+## 6. Passo a passo do primeiro teste
+
+Roteiro completo para testar de verdade, do zero. Vale para Codex e Claude Code. Os comandos estão em
+PowerShell (Windows); no macOS/Linux troque `$HOME\Desktop\...` por `~/Desktop/...`.
+
+### 6.1 Instalar a skill e conectar o Figma (uma vez)
+
+Siga a [seção 2](#2-instalação-no-claude-code) (Claude Code) ou a [seção 3](#3-instalação-no-codex-chatgpt)
+(Codex). Para conferir se a skill foi instalada:
+
+- **Codex:** feche e abra o Codex e digite `$` na caixa de mensagem. A skill `criar-paginas-front` tem
+  que aparecer na lista.
+- **Claude Code:** abra uma sessão nova e digite `/`. A skill `pagesfront:criar-paginas-front` (plugin)
+  ou `criar-paginas-front` (skill pessoal) tem que aparecer.
+
+### 6.2 Montar uma pasta de teste com as referências
+
+Crie uma pasta, ex.: `Desktop\teste-skill\`, e coloque nela as **páginas de um produto antigo do mesmo
+nicho**:
+
+```
+teste-skill\
+├─ index.html          ← pode ser um arquivo vazio
+├─ contact.html  terms.html  privacy.html  reference.html
+├─ shipping.html  refund.html  disclaimer.html
+├─ assets\             ← o assets dos rodapés, se eles usarem
+├─ thank\   vsl\   bonus\
+└─ dtc-b\              ← opcional: dtc-b de um produto do mesmo nicho
+```
+
+Antes de rodar, salve uma "foto" da pasta. Assim dá para ver tudo o que a IA mudou e voltar atrás quando
+quiser:
+
+```powershell
+cd $HOME\Desktop\teste-skill
+git init; git add -A; git commit -m "referencias"
+```
+
+### 6.3 Copiar os 4 links do Figma
+
+Do produto **novo**, copie o link de cada frame: botão direito no frame → **Copy/Paste as → Copy link to
+selection**. O link tem que ter `node-id=` no final.
+
+- frame da `.com`
+- frame da `dtc-b`
+- frame do favicon
+- frame da paleta (ou anote os hex)
+
+### 6.4 Abrir o agente na pasta de teste e mandar o prompt
+
+- **Codex (app ou VS Code):** abra a pasta `teste-skill` como projeto.
+- **Codex (terminal):** `cd $HOME\Desktop\teste-skill` e depois
+  `codex -c sandbox_workspace_write.network_access=true`. O parâmetro libera a internet para os prints
+  carregarem fontes e o Swiper.
+- **Claude Code:** `cd $HOME\Desktop\teste-skill` e depois `claude` (ou abra a pasta no VS Code).
+
+Cole o prompt da [seção 5](#5-prompt-para-chamar-a-skill). Se não tiver os links de checkout, deixe sem:
+é um bom teste para ver se a skill marca `PENDENTE` em vez de inventar.
+
+**Durante a execução:**
+
+- Se o agente pedir para aprovar um comando (`node ...`, abrir o navegador), **aprove**.
+- A skill para sozinha na fase 0 se faltar alguma coisa. Fora isso, vai até o fim sem perguntar.
+- Pode demorar bastante: são várias páginas, com comparação contra o Figma seção por seção.
+
+### 6.5 Conferir o resultado
+
+1. Abra `index.html` e `dtc-b\index.html` no navegador e coloque ao lado do Figma.
+2. Veja os prints que a skill tirou em `.pagesfront\capturas\`.
+3. Rode o validador você mesmo:
+   ```powershell
+   # Codex
+   node $HOME\.agents\skills\criar-paginas-front\scripts\validar.mjs --compilar
+   # Claude Code (skill pessoal)
+   node $HOME\.claude\skills\criar-paginas-front\scripts\validar.mjs --compilar
+   # Plugin do Claude Code: use a cópia do repositório clonado
+   node $HOME\Desktop\skill-pagesfront\skills\criar-paginas-front\scripts\validar.mjs --compilar
+   ```
+4. Para ver tudo o que mudou: `git status` e `git diff`.
+5. Para desfazer e testar de novo do zero: `git reset --hard; git clean -fd`.
+
+### 6.6 O que reportar quando algo sair errado
+
+- o **relatório final** que o agente escreveu;
+- a saída do validador do passo 6.5;
+- **onde ficou diferente do Figma**: um print da página e o frame correspondente, ou só a descrição;
+- se travou ou pediu algo estranho, a mensagem em que isso aconteceu.
+
+Cada erro reportado vira uma regra nova no validador ou uma linha em "Erros conhecidos" (ver
+[seção 10](#10-mantendo-a-skill)).
+
+---
+
+## 7. Regras que a skill segue
 
 Estas regras estão no [SKILL.md](skills/criar-paginas-front/SKILL.md) e nas
 [referências](skills/criar-paginas-front/references/). As marcadas com **[V]** são conferidas
 automaticamente pelo `validar.mjs` ou pelo `capturar.mjs`: a entrega não passa se forem violadas.
 
-### 6.1 Regras de ouro
+### 7.1 Regras de ouro
 
 1. **O validador decide quando acabou.** Nenhuma fase termina sem `validar.mjs` com 0 erros.
 2. **O Figma é a verdade** da `.com` e da `dtc-b`. Cada seção é comparada print × Figma (no máximo 3
@@ -257,7 +351,7 @@ automaticamente pelo `validar.mjs` ou pelo `capturar.mjs`: a entrega não passa 
 7. **Briefing como fonte única de verdade** (`.pagesfront/produto.json`): nome, paleta, kits, links,
    nome e cores do produto antigo. **Todo link externo que ficar nas páginas precisa estar nele.** **[V]**
 
-### 6.2 Padrão de código: `.com` e `dtc-b`
+### 7.2 Padrão de código: `.com` e `dtc-b`
 
 Texto completo: [references/padrao-codigo.md](skills/criar-paginas-front/references/padrao-codigo.md).
 
@@ -282,7 +376,7 @@ Texto completo: [references/padrao-codigo.md](skills/criar-paginas-front/referen
   literalmente.
 - A seção de **kits** da `.com` reaproveita a da `dtc-b` (mesmos kits e links).
 
-### 6.3 Adaptação: thank, vsl, bonus
+### 7.3 Adaptação: thank, vsl, bonus
 
 Texto completo:
 [references/adaptacao-e-rodapes.md](skills/criar-paginas-front/references/adaptacao-e-rodapes.md).
@@ -297,7 +391,7 @@ Texto completo:
 - Player da VSL do produto antigo sai. Sem vídeo novo → `PENDENTE-video-vsl`.
 - Bônus: títulos e capas só se vierem nas entradas. Senão → `PENDENTE-bonus-<n>`.
 
-### 6.4 Rodapés (padrão Cartpanda)
+### 7.4 Rodapés (padrão Cartpanda)
 
 - Comentar o HTML por blocos (banner, passos, aviso, suporte).
 - Trocar a paleta no `:root` e o rótulo `/* <Produto> palette */`.
@@ -305,7 +399,7 @@ Texto completo:
 - Contato do briefing. O que é do provedor (ex.: `support@cartpanda.com`) pode ficar.
 - Manter o Tailwind e o `<style>` inline. Não reescrever em SCSS.
 
-### 6.5 Limpeza do produto antigo
+### 7.5 Limpeza do produto antigo
 
 - **[V]** Pixels e tags removidos: Meta, Google Analytics/GTM, TikTok, Pinterest, Kwai, Snapchat,
   Bing, Taboola/Outbrain, Clarity, Hotjar, Utmify.
@@ -315,7 +409,7 @@ Texto completo:
 - **[V]** Arquivos órfãos e lixo de sistema (`.DS_Store`) apagados.
 - Blocos comentados e scripts mortos removidos.
 
-### 6.6 Imagens e favicon
+### 7.6 Imagens e favicon
 
 - **[V]** Nenhuma imagem acima de **1MB**. Imagens do Figma convertidas para webp e limitadas a 1920px.
 - **[V]** Favicon (baixado do Figma, até 64px) no `<head>` de **todas** as páginas, com caminho relativo
@@ -325,7 +419,7 @@ Texto completo:
 
 ---
 
-## 7. O que a skill faz (fases)
+## 8. O que a skill faz (fases)
 
 0. **Pré-checagem:** links obrigatórios, ferramentas (`preparar.mjs`), referências no projeto
    (`validar.mjs --pre`), mesmo nicho.
@@ -340,7 +434,7 @@ Texto completo:
 
 ---
 
-## 8. Rodando os scripts na mão
+## 9. Rodando os scripts na mão
 
 Da raiz do projeto (troque `SKILL` pela pasta da skill instalada, ex.:
 `~/.agents/skills/criar-paginas-front` ou `~/.claude/skills/criar-paginas-front`):
@@ -359,7 +453,7 @@ Todos aceitam `--help`.
 
 ---
 
-## 9. Mantendo a skill
+## 10. Mantendo a skill
 
 A skill fica numa pasta só (`skills/criar-paginas-front/`). Qualquer mudança vale para o Claude Code
 e para o Codex. Depois de mudar, faça commit e push, e o time atualiza (plugin:
@@ -376,7 +470,7 @@ Cada vez que um teste sair com defeito:
 
 ---
 
-## 10. Arquivos
+## 11. Arquivos
 
 | Arquivo | Para quê |
 |---|---|
