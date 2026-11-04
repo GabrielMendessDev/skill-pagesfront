@@ -12,6 +12,31 @@ mesma pasta de skill para os dois.
 | `thank/`, `vsl/`, `bonus/` | adaptadas da referência | mantém a da referência |
 | 7 rodapés (`contact`, `terms`, `privacy`, `reference`, `shipping`, `refund`, `disclaimer`) | adaptados (padrão Cartpanda) | mantém a da referência |
 
+## Uso rápido
+
+Instalou uma vez ([Claude Code](#2-instalação-no-claude-code) ou [Codex](#3-instalação-no-codex-chatgpt))?
+Então, para cada produto novo, são só 3 passos:
+
+1. **Abra no VS Code a pasta do produto**, com as páginas de referência dentro (`thank/`, `vsl/`,
+   `bonus/` e os 7 rodapés de um produto do mesmo nicho).
+2. **Cole no agente** (Codex no modo Agent, ou Claude Code):
+
+   ```text
+   $criar-paginas-front
+   .com: <link do frame no Figma>
+   dtc-b: <link do frame no Figma>
+   favicon: <link do frame no Figma>
+   paleta: <link do Figma ou os hex>
+   ```
+
+   No Claude Code, troque a primeira linha por `/pagesfront:criar-paginas-front` (plugin) ou
+   `/criar-paginas-front` (skill pessoal).
+3. **Aprove os comandos que ele pedir** e espere o relatório final.
+
+Se faltar alguma coisa, a própria skill para e diz o quê. O resto deste README é consulta.
+
+---
+
 A skill não depende só de a IA "lembrar as regras". Ela traz scripts que **conferem o resultado**, e a
 IA só pode entregar quando eles passam:
 
@@ -64,7 +89,8 @@ Valem para os dois agentes:
 Para **atualizar**: `/plugin marketplace update skill-pagesfront` (ou ative o auto-update em
 `/plugin` → Marketplaces). Depois rode `/reload-plugins` ou abra uma sessão nova.
 
-**Opção B: skill pessoal (sem plugin).** No terminal:
+**Opção B: skill pessoal (sem plugin).** Instala uma vez e vale para o PC inteiro. Clone em qualquer
+pasta, **fora** das pastas de produto (ex.: Área de Trabalho), e rode no terminal:
 
 ```bash
 git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
@@ -109,6 +135,18 @@ node skills/criar-paginas-front/scripts/preparar.mjs
 ## 3. Instalação no Codex (ChatGPT)
 
 ### 3.1 Instalar a skill
+
+> **Instala uma vez e vale para o PC inteiro.** Faça o `git clone` em qualquer pasta (ex.: Área de
+> Trabalho), **fora** das pastas de produto. O `instalar.mjs` copia a skill para a pasta de skills do
+> seu usuário, e a partir daí ela funciona em **qualquer** pasta que você abrir no Codex. A pasta
+> clonada serve só para instalar e atualizar.
+>
+> ```
+> Desktop\
+> ├─ skill-pagesfront\   ← o git clone fica aqui (só para instalar/atualizar)
+> ├─ produto-novo-1\     ← pasta do produto: referências + Codex + $criar-paginas-front
+> └─ produto-novo-2\
+> ```
 
 ```bash
 git clone https://github.com/GabrielMendessDev/skill-pagesfront.git
