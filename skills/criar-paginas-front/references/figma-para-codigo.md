@@ -67,8 +67,20 @@ vem truncada ou genérica e a IA preenche o resto inventando. Peça **por seçã
 ## 6. Kits
 
 - A seção de kits da **dtc-b** é a base da `.com`: mesmos kits, mesmos preços, mesma ordem e o mesmo
-  link de checkout por kit (do briefing; sem link → `href="#PENDENTE-checkout-<kit>"`).
+  link de checkout por kit.
+- **Checkout:** menor quantidade de potes → `href="linkoffer1"`, média → `href="linkoffer3"`, maior →
+  `href="linkoffer2"` (ex.: 2 bottles → `linkoffer1`, 3 → `linkoffer3`, 6 → `linkoffer2`). Não é
+  pendência.
+- **Mobile:** em coluna, do maior para o menor (6 → 3 → 2), mesmo que o Figma mobile mostre outra
+  ordem. Use `order` (exemplo em [padrao-codigo.md](padrao-codigo.md)).
 - Use a estrutura `.area-kits > ul > li.kit-option` (`.best-option` no destaque).
+
+## 6.1 FAQ
+
+- Copy completa no Figma (perguntas e respostas) → use a do Figma.
+- Sem a copy completa no Figma → use o FAQ da referência do mesmo nicho **como está** (dtc-b de
+  referência no modo B; senão, o da `vsl/` ou de outra página de referência), trocando só o nome do
+  produto antigo. Não invente perguntas e não marque como `PENDENTE`.
 
 ## 7. QA visual (obrigatória, por seção)
 

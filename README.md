@@ -41,10 +41,10 @@ A skill não depende só de a IA "lembrar as regras". Ela traz scripts que **con
 IA só pode entregar quando eles passam:
 
 - **`validar.mjs`**: confere padrão de código, links e imagens quebrados, imagens acima de 1MB,
-  arquivos órfãos, pixels e scripts do produto antigo, nome e cores antigos, checkout não declarado e
-  sobras do Figma. Entrega só com **0 erros**.
+  arquivos órfãos, pixels e scripts do produto antigo, nome e cores antigos, checkout fora do padrão
+  `linkoffer` e sobras do Figma. Entrega só com **0 erros**.
 - **`capturar.mjs`**: tira prints por seção (1440px e 390px) para comparar com o Figma e acusa erro de
-  JavaScript, arquivo que não carrega e página vazando para o lado no mobile.
+  JavaScript, arquivo que não carrega, página vazando para o lado e kits fora da ordem no mobile.
 - **`otimizar-imagens.mjs`**: comprime, redimensiona e converte para webp, mantendo os caminhos do
   código certos. Nenhuma imagem passa de 1MB.
 - **`preparar.mjs`**: deixa a máquina pronta (Node, `sass`, `sharp`, Chrome/Edge).
@@ -206,9 +206,12 @@ Na pasta do projeto do produto novo:
    - `index.html` na raiz pode vir vazio: ele vira a `.com`.
 2. **Os 4 links obrigatórios:** design da `.com`, design da `dtc-b`, favicon e paleta (link do Figma ou
    os hex). Use o link do **frame** (com `node-id`), não só o do arquivo.
-3. **Dados opcionais (evitam pendências):** checkout de cada kit, upsell, vídeo da VSL, bônus, e-mail de
-   suporte. **O que não for enviado vira `PENDENTE-...`** no código e aparece no relatório final. A
-   skill não inventa link, preço, claim nem ID.
+3. **Dados opcionais (evitam pendências):** upsell e e-mail de suporte. **O que não for enviado vira
+   `PENDENTE-...`** no código e aparece no relatório final. A skill não inventa link, preço, claim nem
+   ID.
+4. **Não precisa mandar:** checkout dos kits (sempre `linkoffer1/3/2`, ver [7.2](#72-padrão-de-código-com-e-dtc-b)),
+   vídeo da VSL, bônus, FAQ e copy dos rodapés. Esses ficam como vieram da referência (ver
+   [7.7](#77-o-que-fica-como-veio-da-referência-mesmo-nicho)).
 
 > ⚠️ **Mesmo nicho é obrigatório.** Referência de outro nicho = resultado ruim.
 
@@ -238,14 +241,12 @@ favicon:      <link figma do favicon>
 paleta:       <link figma da paleta>   (ou os hex: #......, #......, #......)
 
 Opcionais (o que não vier vira PENDENTE):
-checkout kit 1: <link>
-checkout kit 2: <link>
-checkout kit 3: <link>
-upsell:         <link>
-vídeo da vsl:   <embed ou ID do player>
-bônus:          <nome e arquivo de cada bônus>
-suporte:        <e-mail>
+upsell:   <link>
+suporte:  <e-mail>
 ```
+
+Não precisa mandar checkout dos kits: a skill usa sempre `linkoffer1` (menor quantidade de potes),
+`linkoffer3` (média) e `linkoffer2` (maior).
 
 ### Exemplo preenchido (Codex)
 
@@ -259,9 +260,7 @@ design dtc-b: https://www.figma.com/design/ABC123/Produto?node-id=3-4
 favicon:      https://www.figma.com/design/ABC123/Produto?node-id=5-6
 paleta:       #1A7F5A, #F2B705, #3F4A45, #0B3D2E, #FFFFFF
 
-checkout kit 1: https://produto.mycartpanda.com/checkout/9001
-checkout kit 3: https://produto.mycartpanda.com/checkout/9003
-suporte:        support@cartpanda.com
+suporte:  support@cartpanda.com
 ```
 
 ### O que esperar
@@ -332,8 +331,8 @@ selection**. O link tem que ter `node-id=` no final.
   carregarem fontes e o Swiper.
 - **Claude Code:** `cd $HOME\Desktop\teste-skill` e depois `claude` (ou abra a pasta no VS Code).
 
-Cole o prompt da [seção 5](#5-prompt-para-chamar-a-skill). Se não tiver os links de checkout, deixe sem:
-é um bom teste para ver se a skill marca `PENDENTE` em vez de inventar.
+Cole o prompt da [seção 5](#5-prompt-para-chamar-a-skill). Se não tiver o link do upsell, deixe sem: é
+um bom teste para ver se a skill marca `PENDENTE` em vez de inventar.
 
 **Durante a execução:**
 
@@ -382,8 +381,10 @@ automaticamente pelo `validar.mjs` ou pelo `capturar.mjs`: a entrega não passa 
    rodadas de correção por seção; o que sobrar vai para o relatório).
 3. **O padrão de código é obrigatório** nas páginas do Figma. O código que o Figma devolve
    (React/Tailwind) é só referência visual.
-4. **Nunca inventar** preço, link de checkout, ID de pixel ou vídeo, e-mail, ingrediente, claim,
-   depoimento ou bônus. Faltou → `PENDENTE-<o-que-falta>` + relatório. **[V]** (checkout não declarado)
+4. **Nunca inventar** preço, link, ID de pixel ou vídeo, e-mail, ingrediente, claim, depoimento ou
+   bônus. Faltou → `PENDENTE-<o-que-falta>` + relatório. O que fica como veio da referência
+   ([7.7](#77-o-que-fica-como-veio-da-referência-mesmo-nicho)) não é pendência. **[V]** (checkout
+   antigo ou fora do padrão)
 5. **Uma página por vez**, na ordem das fases, com o progresso anotado em `.pagesfront/progresso.md`.
 6. **Depois da fase 0, não parar para perguntar**, a não ser que falte uma entrada obrigatória.
 7. **Briefing como fonte única de verdade** (`.pagesfront/produto.json`): nome, paleta, kits, links,
@@ -413,6 +414,12 @@ Texto completo: [references/padrao-codigo.md](skills/criar-paginas-front/referen
 - O Figma é lido **seção por seção** (nunca a página inteira de uma vez), com os textos copiados
   literalmente.
 - A seção de **kits** da `.com` reaproveita a da `dtc-b` (mesmos kits e links).
+- **[V]** **Checkout dos kits** (vale também para a vsl): menor quantidade de potes →
+  `href="linkoffer1"`, média → `href="linkoffer3"`, maior → `href="linkoffer2"`. Ex.: 2 bottles →
+  `linkoffer1`, 3 bottles → `linkoffer3`, 6 bottles → `linkoffer2`.
+- **[V]** **Kits no mobile:** em coluna, do maior para o menor (6 → 3 → 2 bottles), seja qual for a
+  ordem do desktop (conferido pelo `capturar.mjs`).
+- **FAQ:** copy do Figma se estiver completa; senão, o FAQ da referência como está.
 
 ### 7.3 Adaptação: thank, vsl, bonus
 
@@ -425,9 +432,10 @@ Texto completo:
 - **[V]** Nome do produto novo no `<title>`, textos, `alt`, assinaturas e **nomes de arquivo**.
 - Mockups do produto novo (os mesmos baixados do Figma).
 - Copy só com fatos do Figma ou do briefing. Claim específico do produto antigo sem equivalente → sai
-  ou fica genérico.
-- Player da VSL do produto antigo sai. Sem vídeo novo → `PENDENTE-video-vsl`.
-- Bônus: títulos e capas só se vierem nas entradas. Senão → `PENDENTE-bonus-<n>`.
+  ou fica genérico. Exceções em [7.7](#77-o-que-fica-como-veio-da-referência-mesmo-nicho).
+- **VSL:** o player (vturb), o `data-delay` e o script de delay do pitch **ficam intactos**. Os kits
+  passam para `linkoffer1/3/2`.
+- **Bônus:** títulos, mockups, imagens e links dos bônus **ficam** como vieram.
 
 ### 7.4 Rodapés (padrão Cartpanda)
 
@@ -435,6 +443,9 @@ Texto completo:
 - Trocar a paleta no `:root` e o rótulo `/* <Produto> palette */`.
 - Trocar o nome no `<title>` (`"<Produto> — Contact Us"`), textos e assinatura do suporte.
 - Contato do briefing. O que é do provedor (ex.: `support@cartpanda.com`) pode ficar.
+- **Copy geral fica** (mesmo nicho). Nada vira `PENDENTE` por causa da copy.
+- **Imagens do `contact.html` ficam quebradas**, com o mesmo `src` e nome. Você coloca as imagens em
+  `assets/` depois, e o relatório final lista quais são. **[V]** (aviso P2, não erro)
 - Manter o Tailwind e o `<style>` inline. Não reescrever em SCSS.
 
 ### 7.5 Limpeza do produto antigo
@@ -452,8 +463,22 @@ Texto completo:
 - **[V]** Nenhuma imagem acima de **1MB**. Imagens do Figma convertidas para webp e limitadas a 1920px.
 - **[V]** Favicon (baixado do Figma, até 64px) no `<head>` de **todas** as páginas, com caminho relativo
   correto.
-- **[V]** Todo `src`/`href` resolve; nenhuma imagem ou arquivo quebrado.
-- **[V]** Sem erro de JavaScript nas páginas.
+- **[V]** Todo `src`/`href` resolve; nenhuma imagem ou arquivo quebrado (exceto as imagens do
+  `contact.html`, que ficam pendentes de propósito).
+- **[V]** Sem erro de JavaScript nas páginas (avisos do player vturb da VSL são listados à parte e não
+  contam).
+
+### 7.7 O que fica como veio da referência (mesmo nicho)
+
+Não é reescrito, não é removido e não vira `PENDENTE`:
+
+| Onde | Fica como está |
+|---|---|
+| `vsl/` | Player da VSL (scripts vturb, `<vturb-smartplayer>`, IDs), elementos com `data-delay` e o script de delay do pitch |
+| `bonus/` | Os bônus: títulos, mockups/capas, imagens, links e PDFs |
+| FAQ | Perguntas e respostas da referência, quando o Figma não tem a copy completa (só o nome do produto muda) |
+| Rodapés | A copy geral (termos, privacidade, frete, reembolso, disclaimer, referências, contato) |
+| `contact.html` | As imagens, mesmo quebradas. O relatório final lista quais você precisa colocar em `assets/` |
 
 ---
 

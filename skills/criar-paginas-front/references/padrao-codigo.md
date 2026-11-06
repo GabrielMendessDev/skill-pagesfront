@@ -163,10 +163,24 @@ Errado:
     <p class="sub">Select the package that fits your goals and save more:</p>
 
     <ul>
+      <li class="kit-option">
+        <a href="linkoffer1">
+          <div class="header">Basic</div>
+          <div class="main">2 Bottles</div>
+          <div class="footer"></div>
+        </a>
+      </li>
       <li class="kit-option best-option">
-        <a href="#">
+        <a href="linkoffer2">
           <div class="header">Best Value</div>
-          <div class="main"></div>
+          <div class="main">6 Bottles</div>
+          <div class="footer"></div>
+        </a>
+      </li>
+      <li class="kit-option">
+        <a href="linkoffer3">
+          <div class="header">Most Popular</div>
+          <div class="main">3 Bottles</div>
           <div class="footer"></div>
         </a>
       </li>
@@ -175,7 +189,51 @@ Errado:
 </section>
 ```
 
+**[V] Checkout (padrão do time):** o `href` do kit é sempre `linkoffer1` (menor quantidade de potes),
+`linkoffer3` (quantidade média) ou `linkoffer2` (maior quantidade). Ex.: 2 bottles → `linkoffer1`,
+3 → `linkoffer3`, 6 → `linkoffer2`. Escrito literalmente, sem `#` e sem URL, igual em todos os botões
+do mesmo kit. O validador confere (K1).
+
+**[V] Mobile:** os kits ficam em coluna, **do maior para o menor** (6 → 3 → 2), seja qual for a ordem
+do desktop. Use `order` dentro do bloco, com o `@media` aninhado:
+
+```scss
+.area-kits {
+  ul {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .kit-option {
+    // desktop (Figma): 2 · 6 · 3  →  mobile: 6 · 3 · 2
+    @media (max-width: 900px) {
+      &:nth-child(1) {
+        order: 3; // 2 potes
+      }
+
+      &:nth-child(2) {
+        order: 1; // 6 potes
+      }
+
+      &:nth-child(3) {
+        order: 2; // 3 potes
+      }
+    }
+  }
+}
+```
+
+Ajuste os `nth-child` à ordem do desktop da página. Se o desktop já for 6 · 3 · 2, não precisa de
+`order`. O `capturar.mjs` confere a ordem no print de 390px.
+
 ### FAQ
+
+Copy: a do Figma, se estiver completa (perguntas e respostas). Se não estiver, use o FAQ da
+referência do mesmo nicho como está, trocando só o nome do produto. Não marque como `PENDENTE`.
 
 ```html
 <section class="faq pd" id="faq">
@@ -360,6 +418,8 @@ Prefira:
 - [V] Media queries aninhadas nos próprios blocos.
 - [V] `<main>` envolve só o `.hero`.
 - [V] Seletores do JS batem com o HTML.
+- [V] Kits com `linkoffer1` (menor) · `linkoffer3` (média) · `linkoffer2` (maior); no mobile, do maior
+  para o menor.
 - [V] Sass compila; `style.css` atualizado.
 - [V] Todo asset referenciado existe.
 - Classes só onde precisa (seção, componente, item repetido); o resto por seletor de elemento.

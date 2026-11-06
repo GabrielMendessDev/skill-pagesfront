@@ -60,6 +60,11 @@ const CDN_HOSTS = [
   'cdn.tailwindcss.com', 'code.jquery.com', 'use.fontawesome.com', 'kit.fontawesome.com', 'www.w3.org',
 ];
 const CHECKOUT_RE = /cartpanda|clickbank|clkbank|hotmart|kiwify|buygoods|digistore|checkout|stripe|paypal|samcart|thrivecart|upsell|order\./i;
+// checkout dos kits (padrão do time): menor qtd de potes → linkoffer1 · média → linkoffer3 · maior → linkoffer2
+const OFERTA_RE = /^linkoffer(\d+)$/i;
+const POTES_RE = /(\d+)\s*-?\s*(?:bottles?|potes?|frascos?|jars?|pouch(?:es)?|bags?|boxes?|caixas?|tubes?|packs?|units?|unidades?)\b/i;
+// player da VSL (vturb/ConverteAI): fica como veio da referência, não é "terceiro a remover"
+const PLAYER_VSL_RE = /converteai|vturb/i;
 const TRACKING = [
   ['Meta/Facebook Pixel', /connect\.facebook\.net|fbq\s*\(|facebook\.com\/tr\b/gi],
   ['Google Tag Manager/Analytics', /googletagmanager\.com|google-analytics\.com|gtag\s*\(|\bGTM-[A-Z0-9]{4,}|\bdataLayer\b/g],
@@ -149,7 +154,7 @@ function deepStrings(o, out = []) {
 }
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isExternal = (u) => /^(?:https?:)?\/\//i.test(u);
-const isLocalRef = (u) => u && u.trim() && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(u.trim()) && !/[{}$]/.test(u);
+const isLocalRef = (u) => u && u.trim() && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(u.trim()) && !/[{}$]/.test(u) && !OFERTA_RE.test(u.trim());
 function hostOf(u) { try { return new URL(u.startsWith('//') ? 'https:' + u : u).host.toLowerCase(); } catch { return ''; } }
 function resolveRef(u, baseDir) {
   let p = u.trim().split('#')[0].split('?')[0];
@@ -188,7 +193,7 @@ function parseHTML(src) {
       continue;
     }
     const parent = stack[stack.length - 1];
-    const el = { tag, attrs: parseAttrs(m[3] || ''), children: [], start: m.index, parent };
+    const el = { tag, attrs: parseAttrs(m[3] || ''), children: [], start: m.index, openEnd: m.index + m[0].length, parent };
     parent.children.push(el);
     if (VOID.has(tag) || m[4] === '/') continue;
     if (RAW.has(tag)) {
@@ -452,7 +457,12 @@ for (const f of htmlFiles) {
         if (!jsIncludedBy.has(k)) jsIncludedBy.set(k, []);
         jsIncludedBy.get(k).push(dir);
       }
-      if (inScope(f) && !refExists(abs)) erro(f, 'R1', `referência quebrada: ${attr}="${u}"`, lineOf(f, el.start));
+      if (!inScope(f) || refExists(abs)) continue;
+      // imagens do contact.html ficam quebradas de propósito: o usuário coloca os arquivos em assets/ depois
+      const favicon = el.tag === 'link' && /icon/i.test(el.attrs.rel || '');
+      if (rel(f) === 'contact.html' && IMG_EXT.has(ext(abs)) && !favicon)
+        aviso(f, 'P2', `imagem do contact.html sem arquivo: ${u} — deixe assim (não remova nem renomeie); liste no relatório: o usuário coloca a imagem em assets/`, lineOf(f, el.start));
+      else erro(f, 'R1', `referência quebrada: ${attr}="${u}"`, lineOf(f, el.start));
     }
   });
   void text;
@@ -502,6 +512,56 @@ function scanPatterns(f, list, nivel, codigo, prefix = '', max = 3) {
   }
 }
 
+// ---------------------------------------------------------------- kits: padrão linkoffer (K1)
+const ofertaDe = (el) => { const m = el.tag === 'a' && (el.attrs.href || '').trim().match(OFERTA_RE); return m ? `linkoffer${Number(m[1])}` : null; };
+function ofertasEm(el) {
+  const s = new Set();
+  const o = ofertaDe(el);
+  if (o) s.add(o);
+  walkEls(el, (e) => { const x = ofertaDe(e); if (x) s.add(x); });
+  return s;
+}
+function blocoDe(el) {
+  for (let p = el; p.parent; p = p.parent) if (p.tag === 'section' || ['body', '#root'].includes(p.parent.tag)) return p;
+  return el;
+}
+const textoDe = (t, el) => t.slice(el.start, el.end || el.openEnd)
+  .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ');
+function checarKits(f, t, all, L) {
+  const PADRAO = 'menor qtd de potes → linkoffer1, média → linkoffer3, maior → linkoffer2';
+  for (const el of all) if (el.tag === 'a' && /PENDENTE-checkout/i.test(el.attrs.href || ''))
+    aviso(f, 'K1', `checkout de kit não é pendência, segue o padrão (${PADRAO}): ${el.attrs.href}`, L(el));
+  // agrupa os links por seção; cada link "sobe" até o maior bloco que só tem ele (o card do kit)
+  const grupos = new Map(); // bloco -> Map(oferta -> { potes: Set, el })
+  for (const a of all) {
+    const v = ofertaDe(a);
+    if (!v) continue;
+    const bloco = blocoDe(a);
+    let box = a;
+    while (box !== bloco && box.parent && ofertasEm(box.parent).size === 1) box = box.parent;
+    if (!grupos.has(bloco)) grupos.set(bloco, new Map());
+    const g = grupos.get(bloco);
+    if (!g.has(v)) g.set(v, { potes: new Set(), el: a });
+    const m = textoDe(t, box).match(POTES_RE);
+    if (m) g.get(v).potes.add(Number(m[1]));
+  }
+  for (const [bloco, g] of grupos) {
+    if (g.size < 2) continue;
+    const onde = showKey(elKey(bloco));
+    const linha = L([...g.values()][0].el);
+    const dupla = [...g].filter(([, x]) => x.potes.size > 1);
+    for (const [v, x] of dupla) erro(f, 'K1', `${v} está em kits com quantidades diferentes (${[...x.potes].join(' e ')} potes) em ${onde} — ${PADRAO}`, L(x.el));
+    if (dupla.length) continue;
+    const lidos = [...g].filter(([, x]) => x.potes.size).map(([v, x]) => [v, [...x.potes][0]]).sort((a, b) => a[1] - b[1]);
+    if (lidos.length < g.size) { aviso(f, 'K1', `não deu para ler a quantidade de potes de todos os kits em ${onde} — confira à mão: ${PADRAO}`, linha); continue; }
+    if (new Set(lidos.map((x) => x[1])).size < lidos.length) { erro(f, 'K1', `dois links diferentes para a mesma quantidade de potes em ${onde}: ${lidos.map(([v, n]) => `${n} → ${v}`).join(', ')}`, linha); continue; }
+    const esperado = lidos.length === 3 ? ['linkoffer1', 'linkoffer3', 'linkoffer2'] : lidos.length === 2 ? ['linkoffer1', 'linkoffer2'] : null;
+    if (!esperado) { aviso(f, 'K1', `${lidos.length} kits em ${onde}; o padrão cobre 3 (${PADRAO}) — confira à mão e explique no relatório`, linha); continue; }
+    if (lidos.some(([v], i) => v !== esperado[i]))
+      erro(f, 'K1', `checkout dos kits fora do padrão em ${onde}: deveria ser ${lidos.map(([, n], i) => `${n} potes → ${esperado[i]}`).join(', ')}; está ${lidos.map(([v, n]) => `${n} potes → ${v}`).join(', ')}`, linha);
+  }
+}
+
 for (const f of pages) {
   const kind = kindOf(f);
   const t = read(f);
@@ -531,12 +591,15 @@ for (const f of pages) {
     const u = el.tag === 'a' ? el.attrs.href : (el.tag === 'script' || el.tag === 'iframe') ? el.attrs.src : null;
     if (!u || !isExternal(u)) continue;
     const host = hostOf(u);
-    if (CDN_HOSTS.includes(host) || isDeclared(u)) continue;
+    if (CDN_HOSTS.includes(host) || PLAYER_VSL_RE.test(host) || isDeclared(u)) continue;
     if (el.tag === 'a') {
-      if (CHECKOUT_RE.test(u)) erro(f, 'T2', `link de checkout não declarado no briefing (provável do produto antigo): ${u}`, L(el));
-      else aviso(f, 'T3', `link externo não declarado no briefing: ${u}`, L(el));
+      if (CHECKOUT_RE.test(u)) erro(f, 'T2', `link de checkout não declarado no briefing (provável do produto antigo) — kits usam linkoffer1/3/2: ${u}`, L(el));
+      else if (rel(f) !== 'bonus/index.html') aviso(f, 'T3', `link externo não declarado no briefing: ${u}`, L(el)); // links dos bônus ficam como vieram
     } else aviso(f, 'T3', `${el.tag} de terceiro (${host}) não declarado no briefing — confirme que é do produto novo ou remova`, L(el));
   }
+
+  // checkout dos kits no padrão linkoffer
+  if (kind !== 'rodape') checarKits(f, t, all, L);
 
   // âncoras internas
   const ids = new Set(all.map((e) => e.attrs.id).filter(Boolean));
@@ -726,20 +789,44 @@ for (const f of ALL.filter(inScope)) {
 }
 
 // ---------------------------------------------------------------- resíduos do produto antigo
+// trechos em que o nome antigo pode ficar de propósito:
+//  - contact.html: as tags <img>/<source> e os url() de imagem ficam intactos (o usuário coloca as imagens) → ignorar
+//  - bonus/index.html: links e imagens dos bônus ficam como vieram da referência → avisar (N4), não bloquear
+function trechosMantidos(f) {
+  const r = rel(f);
+  const modo = r === 'contact.html' ? 'ignorar' : r === 'bonus/index.html' ? 'avisar' : null;
+  if (!modo || !parsed.has(f)) return null;
+  const tags = modo === 'ignorar' ? ['img', 'source'] : ['img', 'source', 'a'];
+  const out = [];
+  walkEls(parsed.get(f), (el) => { if (tags.includes(el.tag)) out.push([el.start, el.openEnd]); });
+  if (modo === 'ignorar') for (const m of read(f).matchAll(URL_RE)) if (IMG_EXT.has(ext(m[2].split(/[?#]/)[0]))) out.push([m.index, m.index + m[0].length]);
+  return { modo, dentro: (i) => out.some(([a, b]) => i >= a && i < b) };
+}
+const MSG_BONUS = 'se for de um bônus, mantenha (bônus ficam como vieram da referência); se for mockup/imagem do produto, troque';
 if (nomesAntigos.length) {
   const res = nomesAntigos.map((n) => [n, new RegExp(n.trim().split(/\s+/).map(escRe).join('[\\s_-]?'), 'gi')]);
   for (const f of ALL.filter(inScope)) {
+    const ehBonus = groupOf(f) === 'bonus';
     for (const [n, re] of res) {
       re.lastIndex = 0;
-      if (re.test(path.basename(f))) erro(f, 'N1', `nome de arquivo contém o produto antigo "${n}" — renomeie (e atualize as referências)`);
+      if (!re.test(path.basename(f))) continue;
+      if (ehBonus) aviso(f, 'N4', `nome de arquivo contém o produto antigo "${n}" — ${MSG_BONUS}`);
+      else erro(f, 'N1', `nome de arquivo contém o produto antigo "${n}" — renomeie (e atualize as referências)`);
     }
     if (!TEXT_EXT.has(ext(f)) || f.includes('.min.') || f.endsWith('.map')) continue;
     if (ext(f) === '.css' && exists(f.replace(/\.css$/i, '.scss'))) continue;
     const t = read(f);
+    const mantidos = trechosMantidos(f);
     for (const [n, re] of res) {
       re.lastIndex = 0;
       let k = 0, m;
-      while ((m = re.exec(t)) && k < 5) { erro(f, 'N1', `resíduo do produto antigo "${n}": "${m[0]}"`, lineOf(f, m.index)); k++; }
+      while ((m = re.exec(t)) && k < 5) {
+        const dentro = mantidos?.dentro(m.index);
+        if (dentro && mantidos.modo === 'ignorar') continue;
+        if (dentro) aviso(f, 'N4', `nome do produto antigo em link/imagem da página de bônus: "${m[0]}" — ${MSG_BONUS}`, lineOf(f, m.index));
+        else erro(f, 'N1', `resíduo do produto antigo "${n}": "${m[0]}"`, lineOf(f, m.index));
+        k++;
+      }
     }
   }
 }

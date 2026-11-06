@@ -6,6 +6,19 @@ troca a identidade para o produto atual, **preservando a estrutura e os caminhos
 Fonte da identidade nova: `.pagesfront/produto.json` (nome, paleta, kits, links) e as imagens do
 produto já baixadas do Figma nas fases da `.com` e da `dtc-b`. Não peça esses dados ao usuário de novo.
 
+## O que fica como veio (mesmo nicho)
+
+A referência é do mesmo nicho, então estes itens **não** são trocados, removidos nem marcados como
+`PENDENTE`:
+
+| Onde | Fica como está |
+|---|---|
+| `vsl/` | Player da VSL (scripts vturb/ConverteAI, `<vturb-smartplayer>`, IDs), elementos com `data-delay` e o script de delay do pitch |
+| `bonus/` | Os bônus: títulos, mockups/capas, imagens, links e arquivos (PDFs) |
+| FAQ (qualquer página) | Perguntas e respostas da referência, se o Figma não tiver a copy completa. Troque só o nome do produto |
+| Rodapés | A copy geral (termos, privacidade, frete, reembolso, disclaimer, referências, contato) |
+| `contact.html` | As imagens: tags, `src` e nomes de arquivo ficam iguais, **mesmo quebrados** |
+
 ## Princípio
 
 Adaptar = trocar a identidade do produto, **não** reescrever o layout.
@@ -24,13 +37,21 @@ Adaptar = trocar a identidade do produto, **não** reescrever o layout.
 4. **Copy:** ajuste ao produto novo **só com fatos que existem** no Figma ou no briefing (nome,
    benefícios e garantia que aparecem no design). Se a referência cita algo específico do produto
    antigo (ingrediente, número, estudo, depoimento) e o produto novo não tem equivalente no
-   Figma/briefing, **remova a frase ou deixe genérica**. Nunca invente.
-5. **Links:** checkout, upsell e âncoras vêm do briefing; sem link → `#PENDENTE-<o-que-é>`. Links entre
-   páginas (rodapés, `../index.html`) precisam resolver. O validador acusa (T2) checkout não declarado.
-6. **Favicon:** copie `.pagesfront/favicon.png` para a pasta de imagens da página e referencie no
+   Figma/briefing, **remova a frase ou deixe genérica**. Nunca invente. Exceções: FAQ, bônus e copy
+   geral dos rodapés ficam (tabela acima).
+5. **Links:** o checkout dos kits segue o padrão do time: menor quantidade de potes →
+   `href="linkoffer1"`, média → `href="linkoffer3"`, maior → `href="linkoffer2"` (ex.: 2 bottles →
+   `linkoffer1`, 3 → `linkoffer3`, 6 → `linkoffer2`). Troque por eles **todo** link de checkout do
+   produto antigo nos kits. Upsell e âncoras vêm do briefing; sem link → `#PENDENTE-<o-que-é>`. Links
+   entre páginas (rodapés, `../index.html`) precisam resolver. O validador acusa checkout antigo (T2) e
+   `linkoffer` fora do padrão (K1).
+6. **Kits no mobile:** em coluna, do maior para o menor (6 → 3 → 2), seja qual for a ordem no desktop.
+   Use o que a página já usa: CSS com `order` dentro do `@media` ou classes `order-*` do Tailwind. O
+   `capturar.mjs` confere no print de 390px.
+7. **Favicon:** copie `.pagesfront/favicon.png` para a pasta de imagens da página e referencie no
    `<head>` com o caminho relativo correto.
-7. **Limpeza** (seção abaixo).
-8. **Validação:** `node $SKILL/scripts/validar.mjs --so <pagina> --compilar`, até 0 erros, e depois
+8. **Limpeza** (seção abaixo).
+9. **Validação:** `node $SKILL/scripts/validar.mjs --so <pagina> --compilar`, até 0 erros, e depois
    `capturar.mjs` para ver se nada quebrou.
 
 ## Limpeza (obrigatória em toda página adaptada)
@@ -46,9 +67,9 @@ Adaptar = trocar a identidade do produto, **não** reescrever o layout.
 
   Remova. Se o usuário pedir explicitamente para manter algum (com o ID novo), declare em
   `scripts_permitidos` no briefing.
-- **Player da VSL:** o embed (vturb, ConverteAI, Panda, Wistia, YouTube…) é do produto antigo. Se o
-  briefing tiver o vídeo novo, troque; se não, deixe o contêiner do player com
-  `<!-- PENDENTE-video-vsl -->` e um `data-pendente="video-vsl"`, sem o script antigo.
+- **Exceção: o player da VSL não é limpeza.** Scripts vturb/ConverteAI, `<vturb-smartplayer>`, IDs do
+  vídeo, elementos com `data-delay` e o script de delay do pitch **ficam exatamente como estão**. Não
+  remova, não troque e não mova. Pixels que estejam junto (Utmify, Meta…) continuam saindo.
 - **Resíduos de código:** `<script>`/`<link>` mortos, blocos comentados, arquivos duplicados ou de
   exemplo, CSS/JS que nada usa.
 
@@ -56,11 +77,15 @@ Adaptar = trocar a identidade do produto, **não** reescrever o layout.
 
 - **thank:** paleta e nome; copy de pós-compra, acesso à área de membros/bônus e botões. Links de
   acesso vêm do briefing ou ficam `PENDENTE`.
-- **vsl:** copy, cores, mockups, thumb e player da VSL (ver acima); mantenha as âncoras e o bloco de
-  kits/checkout com os kits e links do briefing.
-- **bonus:** copy, cores, mockups e itens de bônus. Capas e títulos de bônus **só** se vierem no
-  briefing ou no Figma. Se não vierem, mantenha a estrutura com `PENDENTE-bonus-<n>` nos títulos e
-  capas e remova os PDFs antigos.
+- **vsl:** nome, cores e mockups do produto. **Player, `data-delay` e script de delay do pitch ficam
+  intactos.** Mantenha as âncoras e o bloco de kits, com os kits do briefing, os `href` no padrão
+  `linkoffer` e a ordem do maior para o menor no mobile. O FAQ fica. As partes que o delay esconde não
+  aparecem nos prints do `capturar.mjs` (é o esperado), e os avisos do player aparecem à parte: não são
+  motivo para mexer em nada do player.
+- **bonus:** nome, cores e mockup do produto. **Os bônus ficam como vieram**: títulos, capas/mockups,
+  imagens, links e PDFs. Se um título de bônus citar o nome do produto antigo, troque só o nome. O
+  validador avisa (N4, não bloqueia) quando um link ou imagem da página de bônus tem o nome antigo: se
+  for de um bônus, mantenha; se for o mockup do produto, troque.
 
 ## Rodapés: padrão Cartpanda
 
@@ -80,12 +105,19 @@ As 7 páginas (`contact`, `terms`, `privacy`, `reference`, `shipping`, `refund`,
    `/* <Produto> palette */`). Procure também cores soltas no `<style>` e em classes Tailwind.
 3. **Nome do produto/marca** no `<title>` (`"<Produto> — Contact Us"`), headings, textos e assinatura
    do time de suporte.
-4. **Contato/jurídico:** e-mail, telefone e endereço do briefing. O que for do provedor e valer para
-   qualquer produto (ex.: `support@cartpanda.com`) pode ficar. O que for do produto antigo sai ou vira
-   `PENDENTE`.
-5. **Favicon:** `<link rel="shortcut icon" href="assets/img/favicon.png" type="image/png" />`.
-6. **Não** reescreva em SCSS nem tire o Tailwind.
-7. `node $SKILL/scripts/validar.mjs --so rodapes`, até 0 erros.
+4. **Copy geral fica.** Termos, privacidade, frete, reembolso, disclaimer, referências e contato são do
+   mesmo nicho: troque só o nome do produto e **não** marque nada como `PENDENTE` por causa da copy.
+5. **Contato:** e-mail, telefone e endereço do briefing. O que for do provedor e valer para qualquer
+   produto (ex.: `support@cartpanda.com`) fica. Só um dado amarrado ao produto antigo (ex.: e-mail com
+   o nome da marca antiga) sai ou vira `PENDENTE`.
+6. **Imagens do `contact.html`: não mexa.** Elas são feitas à parte e o usuário coloca em `assets/`
+   depois. Deixe as tags `<img>`, os `src` e os nomes de arquivo **exatamente como estão, mesmo
+   quebrados**. Não remova, não renomeie, não troque por outra imagem e não invente seção para
+   substituir. O validador lista cada uma como aviso P2 (não erro): copie essa lista para o relatório
+   final como pendência ("colocar estas imagens em `assets/`").
+7. **Favicon:** `<link rel="shortcut icon" href="assets/img/favicon.png" type="image/png" />`.
+8. **Não** reescreva em SCSS nem tire o Tailwind.
+9. `node $SKILL/scripts/validar.mjs --so rodapes`, até 0 erros.
 
 ### Exemplo de bloco de paleta
 

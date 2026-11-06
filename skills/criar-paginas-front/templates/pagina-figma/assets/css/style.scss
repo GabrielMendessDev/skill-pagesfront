@@ -152,6 +152,21 @@ header {
       color: $light;
       font-weight: 700;
     }
+
+    // mobile: kits em coluna, do maior para o menor (6 → 3 → 2), seja qual for a ordem do desktop
+    @media (max-width: 900px) {
+      &:nth-child(1) {
+        order: 3; // 2 potes
+      }
+
+      &:nth-child(2) {
+        order: 1; // 6 potes
+      }
+
+      &:nth-child(3) {
+        order: 2; // 3 potes
+      }
+    }
   }
 
   .best-option {

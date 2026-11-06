@@ -20,16 +20,15 @@
   "paleta_antiga": [],
   "fontes": [],
   "kits": [
-    { "nome": "", "quantidade": "", "preco": "", "selo": "", "checkout": "PENDENTE" }
+    { "nome": "", "quantidade": "2 bottles", "preco": "", "selo": "", "checkout": "linkoffer1" },
+    { "nome": "", "quantidade": "3 bottles", "preco": "", "selo": "", "checkout": "linkoffer3" },
+    { "nome": "", "quantidade": "6 bottles", "preco": "", "selo": "", "checkout": "linkoffer2" }
   ],
   "links": {
-    "checkout": {},
     "upsell": {},
-    "vsl_video": "PENDENTE",
     "suporte_email": "",
     "outros": []
   },
-  "bonus": [],
   "scripts_permitidos": [],
   "pendencias": []
 }

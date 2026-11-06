@@ -10,8 +10,12 @@
  *   - erros de JavaScript no console
  *   - arquivos/recursos que não carregaram (404, arquivo inexistente)
  *   - overflow horizontal (página "vazando" para o lado), com os elementos culpados
+ *   - ordem dos kits no mobile: em coluna, do maior para o menor
+ *     (linkoffer2 → linkoffer3 → linkoffer1, ex.: 6 → 3 → 2 bottles)
+ * Erros e arquivos do player da VSL (vturb/ConverteAI) são listados à parte e NÃO contam como
+ * problema: o player e o delay do pitch ficam como vieram da referência.
  * Saída padrão: .pagesfront/capturas/<pagina>/ na raiz do projeto.
- * Código de saída 1 se houver erro de JS, recurso quebrado ou overflow.
+ * Código de saída 1 se houver erro de JS, recurso quebrado, overflow ou kits fora da ordem no mobile.
  *
  * Usa o Chrome/Edge instalado (defina CHROME_PATH para forçar outro). Node 22+, sem dependências.
  */
@@ -124,6 +128,39 @@ const OVERFLOW_JS = `(() => {
   return { overflow: true, scrollWidth: sw, largura: W, els };
 })()`;
 
+// kits no mobile: de cima para baixo, maior → menor = linkoffer2 → linkoffer3 → linkoffer1
+const KITS_JS = `(() => {
+  const ordem = ['linkoffer2', 'linkoffer3', 'linkoffer1'];
+  const fixo = (el) => { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return true; } return false; };
+  const grupos = new Map();
+  for (const a of document.querySelectorAll('a[href]')) {
+    const m = (a.getAttribute('href') || '').trim().match(/^linkoffer(\\d+)$/i);
+    if (!m || fixo(a)) continue;
+    const v = 'linkoffer' + Number(m[1]);
+    const bloco = a.closest('section') || [...document.body.children].find((c) => c.contains(a)) || document.body;
+    if (!grupos.has(bloco)) grupos.set(bloco, { todos: new Set(), ys: new Map() });
+    const g = grupos.get(bloco);
+    g.todos.add(v);
+    const r = a.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const y = Math.round(r.top + scrollY);
+    if (!g.ys.has(v) || y < g.ys.get(v)) g.ys.set(v, y);
+  }
+  const out = [];
+  for (const [bloco, g] of grupos) {
+    if (g.todos.size < 2) continue;
+    const nome = typeof bloco.className === 'string' && bloco.className.trim() ? '.' + bloco.className.trim().split(/\\s+/)[0] : bloco.tagName.toLowerCase();
+    const real = [...g.ys].filter(([v]) => ordem.includes(v)).sort((a, b) => a[1] - b[1]);
+    if (real.length < 2) { out.push({ nome, estado: 'escondido' }); continue; }
+    const esperado = ordem.filter((v) => g.ys.has(v));
+    const ladoALado = real.some((x, i) => i && x[1] - real[i - 1][1] < 20);
+    const certo = real.every(([v], i) => v === esperado[i]);
+    out.push({ nome, estado: ladoALado ? 'lado-a-lado' : certo ? 'ok' : 'errada', ordem: real.map(([v]) => v) });
+  }
+  return out;
+})()`;
+const PLAYER_VSL = /converteai|vturb/i;
+
 const navegador = acharNavegador();
 if (!navegador) { console.error('Chrome/Edge não encontrado. Instale um deles ou defina CHROME_PATH.'); process.exit(2); }
 const userDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pagesfront-nav-'));
@@ -132,7 +169,7 @@ const proc = spawn(navegador, [
   '--no-default-browser-check', '--hide-scrollbars', '--mute-audio', '--disable-extensions', 'about:blank',
 ], { stdio: ['ignore', 'ignore', 'pipe'] });
 
-const problemas = { js: [], recursos: [], overflow: {} };
+const problemas = { js: [], recursos: [], overflow: {}, kits: {}, player: [] };
 const resumo = { pagina: relPag, saida: path.relative(raiz, saida).split(path.sep).join('/'), larguras: {} };
 let codigo = 0;
 
@@ -152,11 +189,17 @@ try {
   cdp.ouvintes.push((m) => {
     if (m.sessionId !== sessionId) return;
     const p = m.params;
-    if (m.method === 'Runtime.exceptionThrown') problemas.js.push(p.exceptionDetails.exception?.description?.split('\n')[0] || p.exceptionDetails.text);
-    if (m.method === 'Runtime.consoleAPICalled' && p.type === 'error') problemas.js.push('console.error: ' + p.args.map((a) => a.value ?? a.description ?? '').join(' '));
+    // o que vem do player da VSL (vturb) vai para "player" e não conta como problema
+    const para = (lista, origem) => (PLAYER_VSL.test(origem || '') ? problemas.player : lista);
+    if (m.method === 'Runtime.exceptionThrown') {
+      const d = p.exceptionDetails;
+      para(problemas.js, d.url || d.stackTrace?.callFrames?.[0]?.url).push(d.exception?.description?.split('\n')[0] || d.text);
+    }
+    if (m.method === 'Runtime.consoleAPICalled' && p.type === 'error')
+      para(problemas.js, p.stackTrace?.callFrames?.[0]?.url).push('console.error: ' + p.args.map((a) => a.value ?? a.description ?? '').join(' '));
     if (m.method === 'Network.requestWillBeSent') urls.set(p.requestId, p.request.url);
-    if (m.method === 'Network.loadingFailed' && !p.canceled) problemas.recursos.push(`${urls.get(p.requestId) || '?'} (${p.errorText})`);
-    if (m.method === 'Network.responseReceived' && p.response.status >= 400) problemas.recursos.push(`${p.response.url} (HTTP ${p.response.status})`);
+    if (m.method === 'Network.loadingFailed' && !p.canceled) { const u = urls.get(p.requestId) || '?'; para(problemas.recursos, u).push(`${u} (${p.errorText})`); }
+    if (m.method === 'Network.responseReceived' && p.response.status >= 400) para(problemas.recursos, p.response.url).push(`${p.response.url} (HTTP ${p.response.status})`);
   });
   await S('Page.enable'); await S('Runtime.enable'); await S('Network.enable');
   const fileUrl = pathToFileURL(pagina).href;
@@ -201,6 +244,10 @@ try {
     await S('Runtime.evaluate', { expression: 'scrollTo(0, 0)' });
     const of = (await S('Runtime.evaluate', { expression: OVERFLOW_JS, returnByValue: true })).result.value;
     if (of.overflow) problemas.overflow[largura] = of;
+    if (mobile) {
+      const kits = (await S('Runtime.evaluate', { expression: KITS_JS, returnByValue: true })).result.value;
+      if (kits.length) problemas.kits[largura] = kits;
+    }
     resumo.larguras[largura] = { secoes: info.blocos.map((b) => `${b.nome} (${b.h}px)`), arquivos, alturaTotal: info.altura };
   }
   await cdp.send('Browser.close').catch(() => {});
@@ -214,6 +261,7 @@ try {
 if (codigo !== 2) {
   problemas.js = [...new Set(problemas.js)];
   problemas.recursos = [...new Set(problemas.recursos)];
+  problemas.player = [...new Set(problemas.player)];
   resumo.problemas = problemas;
   fs.mkdirSync(saida, { recursive: true });
   fs.writeFileSync(path.join(saida, 'resumo.json'), JSON.stringify(resumo, null, 2));
@@ -227,7 +275,18 @@ if (codigo !== 2) {
   const ofs = Object.entries(problemas.overflow);
   console.log('Overflow horizontal:', ofs.length ? '' : 'nenhum');
   for (const [l, o] of ofs) console.log(`  ${l}px: página tem ${o.scrollWidth}px de largura (tela ${o.largura}px). Culpados:\n    - ${o.els.join('\n    - ') || '(não identificado)'}`);
-  if (problemas.js.length || problemas.recursos.length || ofs.length) codigo = 1;
+  const kits = Object.entries(problemas.kits).flatMap(([l, gs]) => gs.map((g) => ({ l, ...g })));
+  const kitsRuins = kits.filter((k) => k.estado === 'errada' || k.estado === 'lado-a-lado');
+  const TXT_KIT = {
+    ok: () => 'ok',
+    errada: (k) => `ERRADA — está ${k.ordem.join(' → ')}; use order no CSS (dentro do @media do bloco). Se o validador acusou K1, corrija os links antes`,
+    'lado-a-lado': () => 'ERRADA — kits lado a lado; no mobile eles ficam em coluna',
+    escondido: () => 'não conferida: kits escondidos (ex.: delay do pitch da VSL) — confira a ordem no CSS',
+  };
+  console.log('Ordem dos kits no mobile (de cima para baixo: linkoffer2 → linkoffer3 → linkoffer1):', kits.length ? '' : 'nenhum bloco de kits com linkoffer');
+  for (const k of kits) console.log(`  ${k.l}px ${k.nome}: ${TXT_KIT[k.estado](k)}`);
+  if (problemas.player.length) console.log(`Player da VSL (vturb) — ${problemas.player.length} aviso(s) do player, ignorados (não mexa no player nem no delay):\n  - ${problemas.player.slice(0, 5).join('\n  - ')}`);
+  if (problemas.js.length || problemas.recursos.length || ofs.length || kitsRuins.length) codigo = 1;
   console.log(codigo ? '\nCorrija os problemas acima e capture de novo.' : '\nSem problemas técnicos. Agora compare cada print com o frame correspondente do Figma.');
 }
 await new Promise((r) => setTimeout(r, 800));
